@@ -1,0 +1,10 @@
+{
+  "install": {
+    "include": [
+      "^.trigger-rebuild$",
+      "\\.js$",
+      "\\.json$"
+    ]
+  },
+  "throttle": 100
+} 

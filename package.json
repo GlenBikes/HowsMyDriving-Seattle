@@ -1,0 +1,40 @@
+{
+  "name": "howsmydriving-seattle",
+  "version": "0.1.1",
+  "description": "Seattle region plug-in for howsmydriving packagemodule.",
+  "main": "howsmydriving-seattle",
+  "scripts": {
+    "start": "node index.js",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "async": "^3.1.0",
+    "aws-sdk": "^2.577.0",
+    "aws-sdk-mock": "^4.5.0",
+    "chokidar": "^3.3.0",
+    "dynamo-batchwrite-queue": "^1.0.1",
+    "express": "^4.14.0",
+    "howsmydriving-utils": "^0.1.12",
+    "live-mutex": "^0.2.21",
+    "log4js": "^4.0.2",
+    "mocha": "^6.2.1",
+    "node-localstorage": "^1.3.1",
+    "request": "^2.88.0",
+    "sinon": "^7.5.0",
+    "soap": "^0.30.0",
+    "twit": "^2.1.0",
+    "uuid": "^3.3.3"
+  },
+  "engines": {
+    "node": "10.x"
+  },
+  "keywords": [
+    "howsmydriving",
+    "howsmydriving-seattle",
+    "howsmydrivingwa",
+    "howsmydrivingny",
+    "howsmydrivingdc"
+  ],
+  "author": "Glen Buhlmann @GlenBikes",
+  "license": "SEE LICENSE IN LICENSE.md"
+}
