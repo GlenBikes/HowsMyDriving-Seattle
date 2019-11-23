@@ -28,6 +28,10 @@
   "engines": {
     "node": "10.x"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glenbikes/howsmydriving-seattle.git"
+  },
   "keywords": [
     "howsmydriving",
     "howsmydriving-seattle",
@@ -36,5 +40,6 @@
     "howsmydrivingdc"
   ],
   "author": "Glen Buhlmann @GlenBikes",
-  "license": "SEE LICENSE IN LICENSE.md"
+  "license": "SEE LICENSE IN LICENSE.md",
+  "homepage": "https://www.npmjs.com/package/howsmydriving-seattle"
 }
