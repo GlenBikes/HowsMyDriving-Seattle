@@ -1,21 +1,10 @@
 {
   "install": {
     "include": [
-      "^package\\.json$",
-      "^\\.env$"
-    ]
-  },
-  "restart": {
-    "exclude": [
-      "^data/",
-      ".*dist.*/",
-      "\\.md$"
-    ],
-    "include": [
-      "\\.ts$",
+      "^.trigger-rebuild$",
       "\\.js$",
       "\\.json$"
     ]
   },
-  "throttle": 2000
-}
+  "throttle": 100
+} 

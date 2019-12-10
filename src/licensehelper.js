@@ -1,4 +1,9 @@
-export let StatesAndProvinces: Array<string> = [
+/* Exported functions. */
+module.exports = {
+  formatPlate: formatPlate
+};
+
+module.exports.StatesAndProvinces = [
   "AL",
   "AK",
   "AS",
@@ -79,7 +84,7 @@ export let StatesAndProvinces: Array<string> = [
  * Also it protects from someone copying/pasting or retweeting or something and having the bot
  * detect it as another request.
 **/
-export function formatPlate(license: string) {
+  function formatPlate(license) {
     return license.toUpperCase().replace(':', '_');
   }
 
