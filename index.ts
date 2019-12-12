@@ -3,10 +3,9 @@ import {IRegion} from 'howsmydriving-utils';
 
 import {log} from './src/logging';
 
-export {SeattleRegion} from './src/seattle';
+var path = require('path'),
+    pjson = require(path.resolve(__dirname + '/../package.json'));
 
-export function GetRegion(): IRegion {
-  return new SeattleRegion();
-}
+export var Region: IRegion = new SeattleRegion();
 
-log.info(`Module howsmydriving-seattle loaded.`);
+log.info(`Module ${pjson.name} version '${pjson.version}' loaded.`);
