@@ -12,7 +12,7 @@ dependencies:
   gulp-cli: 2.2.0
   gulp-jasmine: 4.0.0
   gulp-typescript: 6.0.0-alpha.1
-  howsmydriving-utils: 0.1.34
+  howsmydriving-utils: 0.1.35
   jasmine: 3.5.0
   live-mutex: 0.2.21
   log4js: 4.5.1
@@ -2484,7 +2484,7 @@ packages:
   /hosted-git-info/2.8.5:
     resolution:
       integrity: sha512-kssjab8CvdXfcXMXVcvsXum4Hwdq9XGtRD3TteMEvEbq0LXyiNQr6AprqKqfeaDXze7SxWvRxdpwE6ku7ikLkg==
-  /howsmydriving-utils/0.1.34:
+  /howsmydriving-utils/0.1.35:
     dependencies:
       '@types/body-parser': 1.17.1
       '@types/es6-shim': 0.31.39
@@ -2519,7 +2519,7 @@ packages:
     engines:
       node: 11.15.0
     resolution:
-      integrity: sha512-5D4T0+dNm377b/I+/scNlK/nG1bPyDbOIQP8/hsp7LAc/XiPov18mtuLw8PdojAE3ssBM78B18ZfdzUSs3HYuA==
+      integrity: sha512-shnWYnIzBXihuBehPDi3Vge17vozq6umshz7bgDnPfBWrooVMxMfEe7axa4zjDZcbDaJwv602wGwztLkzNzqqA==
   /http-errors/1.7.2:
     dependencies:
       depd: 1.1.2
@@ -5898,7 +5898,7 @@ specifiers:
   gulp-cli: ^2.2.0
   gulp-jasmine: ^4.0.0
   gulp-typescript: 6.0.0-alpha.1
-  howsmydriving-utils: ^0.1.34
+  howsmydriving-utils: ^0.1.35
   jasmine: ^3.5.0
   live-mutex: ^0.2.21
   log4js: ^4.0.2
