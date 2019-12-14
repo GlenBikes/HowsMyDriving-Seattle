@@ -7,11 +7,14 @@
     "declaration": true,
     "rootDir": ".",
     "outDir": "dist",
-    "types" : ["node", "jasmine"]
+    "preserveSymlinks": true,
+    "types" : ["node", "mocha"]
   },
   "include": [
     "index.ts",
     "definitions/**/*.ts",
-    "src/**/*.ts"
-  ]
+    "src/**/*.ts",
+    "test/**/*.ts"  
+  ],
+  "exclude": ["node_modules"]
 }
