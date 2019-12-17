@@ -1,58 +1,70 @@
-const { series, parallel } = require('gulp');
-
-const gulp = require('gulp');
+const { series, parallel, src, dest } = require('gulp');
+const gulp_prettier = require('gulp-prettier');
 const ts = require('gulp-typescript');
 const mocha = require('gulp-mocha');
-const gulp_clean = require('gulp-clean');
+const del = require('del');
 const path = require('path');
 
-exports.build = series(
-  clean,
-  parallel(
-    build,
-    copyconfigfiles
-  )
-);
+exports.build = series(clean, pretty_check, parallel(build, copyconfigfiles));
 exports.clean = clean;
 exports.copyconfigfiles = copyconfigfiles;
 exports.test = test;
-exports.default = series(
-  clean,
-  parallel(
-    build,
-    copyconfigfiles
-  )
-);
+exports.pretty = pretty;
+exports.pretty_check = pretty_check;
+exports.default = series(clean, pretty_check, build, copyconfigfiles);
 
 const tsProject = ts.createProject('./tsconfig.json');
 
 function build(cb) {
   const merge = require('merge2');
 
-  var tsResult = tsProject.src()
-      .pipe(tsProject());
-
+  var tsResult = tsProject.src().pipe(tsProject());
 
   return merge([
-    tsResult.dts.pipe(gulp.dest('./definitions')),
-    tsResult.js.pipe(gulp.dest(tsProject.config.compilerOptions.outDir))
+    tsResult.dts.pipe(dest('./definitions')),
+    tsResult.js.pipe(dest(tsProject.config.compilerOptions.outDir))
   ]);
 }
 
 function clean(cb) {
-  return gulp.src('dist/**/*', { read: false })
-    .pipe(gulp_clean());
+  return del(['dist/**/*']);
 }
 
 function test(cb) {
-  return gulp.src('./dist/test/**/*.ts')
+  return src('./dist/test/**/*.ts')
     .pipe(tsProject())
-    .pipe(mocha( { require: ['ts-node/register'] } ))
-    .on('end', function() { cb; });
+    .pipe(mocha({ require: ['ts-node/register'] }))
+    .on('end', function() {
+      cb;
+    });
 }
 
 function copyconfigfiles(cb) {
-    return gulp.src('./config/**/*.json')
-        .pipe(gulp.dest('./dist/config/'));
+  return src('./config/*.json').pipe(dest('./dist/config/'));
 }
 
+function pretty(cb) {
+  const merge = require('merge2');
+
+  return merge([tsProject.src(), src('./gulpfile.js')])
+    .pipe(
+      gulp_prettier({
+        config: './.prettierrc.js',
+        ignorePath: './prettierignore',
+        loglevel: 'debug'
+      })
+    )
+    .pipe(dest('.'));
+}
+
+function pretty_check(cb) {
+  const merge = require('merge2');
+
+  return merge([tsProject.src(), src('./gulpfile.js')]).pipe(
+    gulp_prettier.check({
+      config: './.prettierrc.js',
+      ignorePath: './prettierignore',
+      loglevel: 'debug'
+    })
+  );
+}

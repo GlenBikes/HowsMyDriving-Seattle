@@ -1,36 +1,36 @@
 // TODO: Order things in this file
 
 // Imports
-import {Client as SOAPClient} from 'soap';
-import {createClient as CreateSOAPClient} from 'soap';
+import { Client as SOAPClient } from 'soap';
+import { createClient as CreateSOAPClient } from 'soap';
 
-import {IRegion} from 'howsmydriving-utils';
-import {ICitation} from 'howsmydriving-utils';
-import {Citation} from 'howsmydriving-utils';
-import {DumpObject} from 'howsmydriving-utils';
-import {StatesAndProvinces} from 'howsmydriving-utils';
-import {formatPlate} from 'howsmydriving-utils';
-import {CompareNumericStrings} from 'howsmydriving-utils';
-import {CitationIds} from 'howsmydriving-utils';
+import { ICitation } from 'howsmydriving-utils';
+import { Citation } from 'howsmydriving-utils';
+import { CitationIds } from 'howsmydriving-utils';
+import { CompareNumericStrings } from 'howsmydriving-utils';
+import { DumpObject } from 'howsmydriving-utils';
+import { formatPlate } from 'howsmydriving-utils';
+import { Region } from 'howsmydriving-utils';
+import { StatesAndProvinces } from 'howsmydriving-utils';
 
-import {log} from './logging';
+export const __REGION_NAME__: string = 'Seattle';
 
-var fs = require("fs"),
-    path = require("path"),
-    pjson = require(path.resolve(__dirname + '/../../package.json'));
+import { log } from './logging';
 
-const __REGION_NAME__: string = "Seattle";
+var fs = require('fs'),
+  path = require('path');
 
 // TODO: Consolidate these.
-const parkingAndCameraViolationsText = "Total parking and camera violations for #",
-  violationsByYearText = "Violations by year for #",
-  violationsByStatusText = "Violations by status for #",
-  citationQueryText = "License #__LICENSE__ has been queried __COUNT__ times.";
+const parkingAndCameraViolationsText =
+    'Total parking and camera violations for #',
+  violationsByYearText = 'Violations by year for #',
+  violationsByStatusText = 'Violations by status for #',
+  citationQueryText = 'License #__LICENSE__ has been queried __COUNT__ times.';
 
 // The Seattle court web service to query citations.
 // This could break at any time since they don't document its availability.
 var url =
-  "https://web6.seattle.gov/Courts/ECFPortal/JSONServices/ECFControlsService.asmx?wsdl";
+  'https://web6.seattle.gov/Courts/ECFPortal/JSONServices/ECFControlsService.asmx?wsdl';
 
 // interfaces - TODO: Move to declaration files.
 interface ISeattleCitation extends ICitation {
@@ -39,17 +39,16 @@ interface ISeattleCitation extends ICitation {
   Type: string;
   Status: string;
   ViolationDate: string;
-  ViolationLocation: string
+  ViolationLocation: string;
 }
 
-class SeattleCitation extends Citation implements ISeattleCitation {
+class SeattleCitation extends Citation {
   [index: string]: any;
-  constructor(citation: Citation) 
-  {
-    super(citation.citation_id, citation.license);
-    
+  constructor(citation: Citation) {
+    super(citation);
+
     // If passed an existing instance, copy over the properties.
-    if(arguments.length > 0) {
+    if (arguments.length > 0) {
       for (var p in citation) {
         if (citation.hasOwnProperty(p)) {
           this[p] = citation[p];
@@ -58,88 +57,109 @@ class SeattleCitation extends Citation implements ISeattleCitation {
     }
     this.region = __REGION_NAME__;
   }
-  
+
   Citation: number;
   Type: string;
   Status: string;
   ViolationDate: string;
-  ViolationLocation: string
+  ViolationLocation: string;
 }
 
 interface ISeattleVehicle {
-  VehicleNumber: number,
-  Make: string,
-  Model: string,
-  Year: string,
-  State: string,
-  Plate: string,
-  ExpirationYear: string,
-  Color: string,
-  Style: string,
-  Dealer: string,
-  VIN: string,
-  PlateType: string,
-  DOLReceivedDate: string,
-  DOLRequestDate: string
+  VehicleNumber: number;
+  Make: string;
+  Model: string;
+  Year: string;
+  State: string;
+  Plate: string;
+  ExpirationYear: string;
+  Color: string;
+  Style: string;
+  Dealer: string;
+  VIN: string;
+  PlateType: string;
+  DOLReceivedDate: string;
+  DOLRequestDate: string;
 }
 
 interface ISeattleGetVehicleByPlateResult {
-  GetVehicleByPlateResult: string
+  GetVehicleByPlateResult: string;
 }
 
 interface IGetCitationsByVehicleNumberResult {
-  GetCitationsByVehicleNumberResult: string
+  GetCitationsByVehicleNumberResult: string;
 }
 
 // Classes
-export class SeattleRegion implements IRegion {
+export class SeattleRegion extends Region {
   constructor() {
-    log.debug(`Creating instance of SeattleRegion for region ${__REGION_NAME__}`);
+    super(__REGION_NAME__);
+
+    log.debug(
+      `Creating instance of ${this.name} for region ${__REGION_NAME__}`
+    );
   }
 
-  readonly Name: string = __REGION_NAME__;
-  
   GetCitationsByPlate(plate: string, state: string): Promise<Array<Citation>> {
-    return new Promise<Array<Citation>>( (resolve, reject) => {
+    return new Promise<Array<Citation>>((resolve, reject) => {
       let citations: Array<Citation> = [];
-      this.GetVehicleIDs(plate, state).then(async (vehicles: ISeattleVehicle[]) => {
-        // Make the calls to GetCitationsByVehicleNum soap method synchronously
-        // Or we could get throttled by the server.
+      this.GetVehicleIDs(plate, state).then(
+        async (vehicles: ISeattleVehicle[]) => {
+          // Make the calls to GetCitationsByVehicleNum soap method synchronously
+          // Or we could get throttled by the server.
 
-        // citations is an array of an array of citations, one for each vehicle id
-        // collapse them into a hash based on 
-        let citationsByCitationID: { [citation_id: string] : Citation } = {};
-        for (let i: number = 0; i < vehicles.length; i++) {
-          let vehicle: ISeattleVehicle = vehicles[i];
-          ( await this.GetCitationsByVehicleNum(vehicle.VehicleNumber) ).forEach( (citation: Citation) => {
-            // use the Citation field as the unique citation_id.
-            citation.citation_id = citation.Citation
-            citationsByCitationID[citation.citation_id] = citation;
-          })
+          // citations is an array of an array of citations, one for each vehicle id
+          // collapse them into a hash based on
+          let citationsByCitationID: { [citation_id: string]: Citation } = {};
+          for (let i: number = 0; i < vehicles.length; i++) {
+            let vehicle: ISeattleVehicle = vehicles[i];
+            (
+              await this.GetCitationsByVehicleNum(vehicle.VehicleNumber)
+            ).forEach((citation: Citation) => {
+              // use the Citation field as the unique citation_id.
+              citation.citation_id = citation.Citation;
+              citationsByCitationID[citation.citation_id] = citation;
+            });
+          }
+
+          log.info(
+            `Found ${
+              Object.keys(citationsByCitationID).length
+            } different citations for vehicle ${state}:${plate}`
+          );
+
+          // Now put the unique citations back to an array
+          let allCitations: Array<Citation> = Object.keys(
+            citationsByCitationID
+          ).map(function(v) {
+            return citationsByCitationID[v];
+          });
+
+          resolve(allCitations);
         }
-                                                                                 
-        log.info(`Found ${Object.keys(citationsByCitationID).length} different citations for vehicle ${state}:${plate}`);
-
-        // Now put the unique citations back to an array
-        let allCitations: Array<Citation> = Object.keys(citationsByCitationID).map(function(v) { return citationsByCitationID[v]; });
-
-        resolve(allCitations);
-      });
+      );
     });
   }
 
-  ProcessCitationsForRequest(citations: ICitation[], query_count: number): Array<string> {
-    var categorizedCitations: { [request_id: string] : number } = {};
+  ProcessCitationsForRequest(
+    citations: ICitation[],
+    query_count: number
+  ): Array<string> {
+    var categorizedCitations: { [request_id: string]: number } = {};
     // TODO: Does it work to convert Date's to string for sorting? Might have to use epoch.
-    var chronologicalCitations: { [violation_date: string] : Array<ICitation> } = {};
-    var violationsByYear: { [violation_year: string] : number } = {};
-    var violationsByStatus: { [status: string] : number } = {};
+    var chronologicalCitations: {
+      [violation_date: string]: Array<ICitation>;
+    } = {};
+    var violationsByYear: { [violation_year: string]: number } = {};
+    var violationsByStatus: { [status: string]: number } = {};
 
     if (!citations || Object.keys(citations).length == 0) {
       // Should never happen. jurisdictions must return at least a dummy citation
-      throw new Error("Jurisdiction modules must return at least one citation, a dummy one if there are none.");
+      throw new Error(
+        'Jurisdiction modules must return at least one citation, a dummy one if there are none.'
+      );
     }
-    
+
     var license: string;
 
     for (var i = 0; i < citations.length; i++) {
@@ -162,7 +182,9 @@ export class SeattleRegion implements IRegion {
       // TODO: Is it possible to have more than 1 citation with exact same time?
       // Maybe throw an exception if we ever encounter it...
       if (!(violationDate.getTime().toString() in chronologicalCitations)) {
-        chronologicalCitations[violationDate.getTime().toString()] = new Array();
+        chronologicalCitations[
+          violationDate.getTime().toString()
+        ] = new Array();
       }
 
       chronologicalCitations[violationDate.getTime().toString()].push(citation);
@@ -189,28 +211,28 @@ export class SeattleRegion implements IRegion {
     var general_summary =
       parkingAndCameraViolationsText +
       formatPlate(license) +
-      ": " +
+      ': ' +
       Object.keys(citations).length;
 
-    Object.keys(categorizedCitations).forEach( key => {
-      var line = key + ": " + categorizedCitations[key];
+    Object.keys(categorizedCitations).forEach(key => {
+      var line = key + ': ' + categorizedCitations[key];
 
       // Max twitter username is 15 characters, plus the @
-      general_summary += "\n";
+      general_summary += '\n';
       general_summary += line;
     });
 
-    general_summary += "\n\n";
+    general_summary += '\n\n';
     general_summary += citationQueryText
       .replace('__LICENSE__', formatPlate(license))
       .replace('__COUNT__', query_count.toString());
 
-    var detailed_list = "";
+    var detailed_list = '';
 
     var sortedChronoCitationKeys = Object.keys(chronologicalCitations).sort(
       function(a: string, b: string) {
         //return new Date(a).getTime() - new Date(b).getTime();
-        return CompareNumericStrings(a, b);  //(a === b) ? 0 : ( a < b ? -1 : 1);
+        return CompareNumericStrings(a, b); //(a === b) ? 0 : ( a < b ? -1 : 1);
       }
     );
 
@@ -219,46 +241,41 @@ export class SeattleRegion implements IRegion {
     for (var i = 0; i < sortedChronoCitationKeys.length; i++) {
       var key: string = sortedChronoCitationKeys[i];
 
-      chronologicalCitations[key].forEach( citation => {
+      chronologicalCitations[key].forEach(citation => {
         if (first != true) {
-          detailed_list += "\n";
+          detailed_list += '\n';
         }
         first = false;
         detailed_list += `${citation.ViolationDate}, ${citation.Type}, ${citation.ViolationLocation}, ${citation.Status}`;
       });
     }
 
-    var temporal_summary: string = violationsByYearText + formatPlate(license) + ":";
-    Object.keys(violationsByYear).forEach( (key) => {
-      temporal_summary += "\n";
+    var temporal_summary: string =
+      violationsByYearText + formatPlate(license) + ':';
+    Object.keys(violationsByYear).forEach(key => {
+      temporal_summary += '\n';
       temporal_summary += `${key}: ${violationsByYear[key].toString()}`;
     });
 
-    var type_summary = violationsByStatusText + formatPlate(license) + ":";
-    Object.keys(violationsByStatus).forEach( key => {
-      type_summary += "\n";
+    var type_summary = violationsByStatusText + formatPlate(license) + ':';
+    Object.keys(violationsByStatus).forEach(key => {
+      type_summary += '\n';
       type_summary += `${key}: ${violationsByStatus[key]}`;
     });
 
     // Return them in the order they should be rendered.
-    return [
-      general_summary,
-      detailed_list,
-      type_summary,
-      temporal_summary
-    ];
+    return [general_summary, detailed_list, type_summary, temporal_summary];
   }
 
-
-  // TODO: If we export this class, this method must be moved out 
+  // TODO: If we export this class, this method must be moved out
   // because there is no way to declare a function private in a class.
-  GetVehicleIDs(plate: string, state: string): Promise< ISeattleVehicle[] > {
+  GetVehicleIDs(plate: string, state: string): Promise<ISeattleVehicle[]> {
     var args = {
       Plate: plate,
       State: state
     };
 
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       CreateSOAPClient(url, function(err: Error, client: SOAPClient) {
         if (err) {
           throw err;
@@ -267,27 +284,30 @@ export class SeattleRegion implements IRegion {
         // GetVehicleByPlate returns all vehicles with plates that
         // start with the specified plate. So we have to filter the
         // results.
-        client.GetVehicleByPlate(args, (err: Error, result: ISeattleGetVehicleByPlateResult) => {
-          if (err) {
-            throw err;
-          }
-          let vehicle_records: Array<ISeattleVehicle> = [];
-          var jsonObj = JSON.parse(result.GetVehicleByPlateResult);
-          var jsonResultSet = JSON.parse(jsonObj.Data);
-
-          for (var i = 0; i < jsonResultSet.length; i++) {
-            let vehicle :Vehicle = new Vehicle(jsonResultSet[i]);
-
-            if (vehicle.Plate == plate) {
-              vehicle_records.push(vehicle);
+        client.GetVehicleByPlate(
+          args,
+          (err: Error, result: ISeattleGetVehicleByPlateResult) => {
+            if (err) {
+              throw err;
             }
+            let vehicle_records: Array<ISeattleVehicle> = [];
+            var jsonObj = JSON.parse(result.GetVehicleByPlateResult);
+            var jsonResultSet = JSON.parse(jsonObj.Data);
+
+            for (var i = 0; i < jsonResultSet.length; i++) {
+              let vehicle: Vehicle = new Vehicle(jsonResultSet[i]);
+
+              if (vehicle.Plate == plate) {
+                vehicle_records.push(vehicle);
+              }
+            }
+            resolve(vehicle_records);
           }
-          resolve(vehicle_records);
-        });
+        );
       });
     });
   }
-  
+
   GetCitationsByVehicleNum(vehicleID: number): Promise<Citation[]> {
     var args = {
       VehicleNumber: vehicleID
@@ -300,32 +320,39 @@ export class SeattleRegion implements IRegion {
         if (err) {
           throw err;
         }
-        client.GetCitationsByVehicleNumber(args, (err: Error, citations_result: IGetCitationsByVehicleNumberResult) => {
-          
-          if (err) {
-            throw err;
-          }
-          
-          var jsonObj = JSON.parse(citations_result.GetCitationsByVehicleNumberResult);
-          var jsonResultSet = JSON.parse(jsonObj.Data);
-          
-          let citations: ICitation[] = [];
-          
-          jsonResultSet.forEach( (item: any ) => {
-            let citation: ISeattleCitation = item as ISeattleCitation;
-            
-            // Add in the citation_id and region fields
-            citation.citation_id = citation.Citation;
-            citation.region = __REGION_NAME__;
-            citations.push(citation);
-          });
+        client.GetCitationsByVehicleNumber(
+          args,
+          (
+            err: Error,
+            citations_result: IGetCitationsByVehicleNumberResult
+          ) => {
+            if (err) {
+              throw err;
+            }
 
-          resolve(citations);
-        });
+            var jsonObj = JSON.parse(
+              citations_result.GetCitationsByVehicleNumberResult
+            );
+            var jsonResultSet = JSON.parse(jsonObj.Data);
+
+            let citations: ICitation[] = [];
+
+            jsonResultSet.forEach((item: any) => {
+              let citation: ISeattleCitation = item as ISeattleCitation;
+
+              // Add in the citation_id and region fields
+              citation.citation_id = citation.Citation;
+              citation.region = __REGION_NAME__;
+              citations.push(citation);
+            });
+
+            resolve(citations);
+          }
+        );
       });
     });
   }
-  
+
   // TODO: Implement and test this.
   GetCasesByVehicleNum(vehicleID: number): Promise<any> {
     var args = {
@@ -333,9 +360,14 @@ export class SeattleRegion implements IRegion {
     };
     return new Promise((resolve, reject) => {
       CreateSOAPClient(url, (err: Error, client: SOAPClient) => {
-        client.GetCasesByVehicleNumber(args, function(err: Error, cases_result: any) {
+        client.GetCasesByVehicleNumber(args, function(
+          err: Error,
+          cases_result: any
+        ) {
           // TODO: This is not right. Need JSON.parse twice.
-          var cases: Array<any> = JSON.parse(cases_result.GetCasesByVehicleNumberResult);
+          var cases: Array<any> = JSON.parse(
+            cases_result.GetCasesByVehicleNumberResult
+          );
 
           resolve(cases);
         });
@@ -351,8 +383,7 @@ class Vehicle implements ISeattleVehicle {
     this.Model = veh.Model;
     this.Year = veh.Year;
     this.State = veh.State;
-    this.Plate = veh.Plate,
-    this.ExpirationYear = veh.ExpirationYear;
+    (this.Plate = veh.Plate), (this.ExpirationYear = veh.ExpirationYear);
     this.Color = veh.Color;
     this.Style = veh.Style;
     this.Dealer = veh.Dealer;
@@ -361,7 +392,7 @@ class Vehicle implements ISeattleVehicle {
     this.DOLReceivedDate = veh.DOLReceivedDate;
     this.DOLRequestDate = veh.DOLRequestDate;
   }
-  
+
   VehicleNumber: number;
   Make: string;
   Model: string;
@@ -378,11 +409,7 @@ class Vehicle implements ISeattleVehicle {
   DOLRequestDate: string;
 }
 
-
 // Print out subset of citation object properties.
-function printCitation( citation: ISeattleCitation ) {
-  return (
-    `Citation: ${citation.id}, ${citation.Citation}, Type: ${citation.Type}, Status: ${citation.Status}, Date: ${citation.ViolationDate}, Location: ${citation.ViolationLocation}.`
-  )
+function printCitation(citation: ISeattleCitation) {
+  return `Citation: ${citation.id}, ${citation.Citation}, Type: ${citation.Type}, Status: ${citation.Status}, Date: ${citation.ViolationDate}, Location: ${citation.ViolationLocation}.`;
 }
-
