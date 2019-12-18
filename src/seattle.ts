@@ -101,8 +101,15 @@ export class SeattleRegion extends Region {
   }
 
   GetCitationsByPlate(plate: string, state: string): Promise<Array<Citation>> {
+    log.debug(
+      `Getting citations for ${state}:${plate} in region ${__REGION_NAME__}.`
+    );
     return new Promise<Array<Citation>>((resolve, reject) => {
       let citations: Array<Citation> = [];
+
+      log.debug(
+        `Getting vehicles for ${state}:${plate} in ${__REGION_NAME__} region.`
+      );
       this.GetVehicleIDs(plate, state).then(
         async (vehicles: ISeattleVehicle[]) => {
           // Make the calls to GetCitationsByVehicleNum soap method synchronously
@@ -113,9 +120,14 @@ export class SeattleRegion extends Region {
           let citationsByCitationID: { [citation_id: string]: Citation } = {};
           for (let i: number = 0; i < vehicles.length; i++) {
             let vehicle: ISeattleVehicle = vehicles[i];
-            (
-              await this.GetCitationsByVehicleNum(vehicle.VehicleNumber)
-            ).forEach((citation: Citation) => {
+            log.debug(
+              `Getting citations for ${state}:${plate} vehicle ${vehicle.VehicleNumber} in ${__REGION_NAME__} region.`
+            );
+            let citations: Array<ICitation> = await this.GetCitationsByVehicleNum(
+              vehicle.VehicleNumber
+            );
+
+            citations.forEach((citation: ICitation) => {
               // use the Citation field as the unique citation_id.
               citation.citation_id = citation.Citation;
               citationsByCitationID[citation.citation_id] = citation;
@@ -135,6 +147,9 @@ export class SeattleRegion extends Region {
             return citationsByCitationID[v];
           });
 
+          log.debug(
+            `Resolving promise for ${citations.length} citations for ${state}:${plate} in #{__REGION_NAME__} regions.`
+          );
           resolve(allCitations);
         }
       );
