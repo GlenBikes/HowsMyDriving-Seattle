@@ -148,7 +148,7 @@ export class SeattleRegion extends Region {
           });
 
           log.debug(
-            `Resolving promise for ${citations.length} citations for ${state}:${plate} in #{__REGION_NAME__} regions.`
+            `Resolving promise for ${citations.length} citations for ${state}:${plate} in ${__REGION_NAME__} regions.`
           );
           resolve(allCitations);
         }
