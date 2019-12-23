@@ -1,10 +1,10 @@
 dependencies:
   '@types/node': 12.12.17
-  app-root-dir: 1.0.2
   chokidar: 3.3.0
-  howsmydriving-utils: 0.1.83
+  howsmydriving-utils: 0.1.84
   log4js: 4.5.1
   node-localstorage: 1.3.1
+  packpath: 0.1.0
   soap: 0.30.0
   twit: 2.2.11
   uuid: 3.3.3
@@ -2297,14 +2297,15 @@ packages:
     dev: true
     resolution:
       integrity: sha512-kssjab8CvdXfcXMXVcvsXum4Hwdq9XGtRD3TteMEvEbq0LXyiNQr6AprqKqfeaDXze7SxWvRxdpwE6ku7ikLkg==
-  /howsmydriving-twitter/0.1.31:
+  /howsmydriving-twitter/0.1.32:
     dependencies:
       app-root-dir: 1.0.2
       chokidar: 3.3.1
       file-system: 2.2.2
-      howsmydriving-utils: 0.1.83
+      howsmydriving-utils: 0.1.84
       log4js: 4.5.1
       mutex-promise: 0.1.0
+      packpath: 0.1.0
       soap: 0.30.0
       twit: 2.2.11
       uuid: 3.3.3
@@ -2312,21 +2313,22 @@ packages:
     engines:
       node: 10.x
     resolution:
-      integrity: sha512-K8Bh46d/AwEwfJyMcuYqmDLTwh764P92OQbcJZUmIuHaTaFNAQJQ4DzGo+sLnXdBwBelnZcQxwo79dUT2qEhqQ==
-  /howsmydriving-utils/0.1.83:
+      integrity: sha512-SRWIJKXZkBKlGqAzoDARq1uYFmVuijlFdOvQ0nDyKcFHgdM4+pe9cHaybPRmPKjAA6xpT8wIbQTPqUVCJYlrEw==
+  /howsmydriving-utils/0.1.84:
     dependencies:
       '@types/uuid': 3.4.6
       app-root-dir: 1.0.2
       chokidar: 3.3.1
       find-port-free-sync: 1.0.1
-      howsmydriving-twitter: 0.1.31
+      howsmydriving-twitter: 0.1.32
       log4js: 6.1.0
       merge2: 1.3.0
+      packpath: 0.1.0
     dev: false
     engines:
       node: 11.15.0
     resolution:
-      integrity: sha512-k2vC03nSauQz9SJDnLeKSITchyJbhD1YmpsMgH3r3uicFhEatX3kJzg8gO7ye3m/YlkQpWpv2Gyrb6F0V/Du1w==
+      integrity: sha512-LY+zHqXwKfenimOtk/B6sIgbwdfl42MBw60U6QhTT8Fr17d+bBRgndFFVW/LEqpQ10ym8yNvyv4vnNeKiD1Phw==
   /http-errors/1.7.3:
     dependencies:
       depd: 1.1.2
@@ -3706,6 +3708,10 @@ packages:
       node: '>=6'
     resolution:
       integrity: sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==
+  /packpath/0.1.0:
+    dev: false
+    resolution:
+      integrity: sha1-pSFTQiLf6qnGEu8MZA7DmRSezdg=
   /parse-filepath/1.0.2:
     dependencies:
       is-absolute: 1.0.0
@@ -5425,7 +5431,6 @@ shrinkwrapVersion: 3
 specifiers:
   '@types/mocha': ^5.2.6
   '@types/node': ^12.12.14
-  app-root-dir: ^1.0.2
   chokidar: ^3.3.0
   del: ^5.1.0
   gulp: ^4.0.2
@@ -5433,12 +5438,13 @@ specifiers:
   gulp-mocha: ^7.0.2
   gulp-prettier: ^2.3.0
   gulp-typescript: ^6.0.0-alpha.1
-  howsmydriving-utils: ^0.1.83
+  howsmydriving-utils: ^0.1.84
   log4js: ^4.0.2
   merge2: ^1.3.0
   mocha: ^6.2.2
   mocha-typescript: ^1.1.17
   node-localstorage: ^1.3.1
+  packpath: ^0.1.0
   prettier: ^1.19.1
   sinon: ^7.5.0
   soap: ^0.30.0
