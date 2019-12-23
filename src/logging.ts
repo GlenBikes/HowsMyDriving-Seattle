@@ -5,6 +5,8 @@
  *  logs will be integrated with the infrastructure logs and all the
  *  other plugin logs.
  **/
+let app_root_dir = require('app-root-dir').get();
+
 import { __REGION_NAME__ } from './seattle';
 
 var log4js = require('log4js'),
@@ -12,7 +14,7 @@ var log4js = require('log4js'),
   path = require('path');
 
 // Load the config.
-const config_path = path.resolve(__dirname + '/../config/log4js.json');
+const config_path = path.resolve(app_root_dir + '/dist/config/log4js.json');
 
 // Load the config.
 log4js.configure(config_path);
@@ -22,6 +24,7 @@ log4js.configure(config_path);
 export var log = log4js.getLogger('result');
 
 log.addContext('module', __REGION_NAME__);
+log.info(`app_root_dir: ${app_root_dir}.`);
 
 /**
  * Monitor the log4js config file and reloading log instances if the file changes.

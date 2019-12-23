@@ -22,7 +22,7 @@ var fs = require('fs'),
 
 // TODO: Consolidate these.
 const parkingAndCameraViolationsText =
-    'Total parking and camera violations for #',
+    'Total __REGION__ parking and camera violations for #__LICENSE__: __COUNT__',
   violationsByYearText = 'Violations by year for #',
   violationsByStatusText = 'Violations by status for #',
   citationQueryText = 'License #__LICENSE__ has been queried __COUNT__ times.';
@@ -147,9 +147,6 @@ export class SeattleRegion extends Region {
             return citationsByCitationID[v];
           });
 
-          log.debug(
-            `Resolving promise for ${citations.length} citations for ${state}:${plate} in ${__REGION_NAME__} regions.`
-          );
           resolve(allCitations);
         }
       );
@@ -223,11 +220,10 @@ export class SeattleRegion extends Region {
       violationsByYear[year.toString()]++;
     }
 
-    var general_summary =
-      parkingAndCameraViolationsText +
-      formatPlate(license) +
-      ': ' +
-      Object.keys(citations).length;
+    var general_summary = parkingAndCameraViolationsText
+      .replace('__LICENSE__', formatPlate(license))
+      .replace('__REGION__', __REGION_NAME__)
+      .replace('__COUNT__', Object.keys(citations).length.toString());
 
     Object.keys(categorizedCitations).forEach(key => {
       var line = key + ': ' + categorizedCitations[key];
