@@ -13,6 +13,4 @@ var path = require('path'),
 
 export var Region = new SeattleRegion();
 
-log.info(`package.json: ${json_path}.`);
-
 log.info(`Module ${pjson.name} version '${pjson.version}' loaded.`);
