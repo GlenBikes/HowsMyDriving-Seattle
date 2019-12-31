@@ -7,11 +7,14 @@
   },
   "restart": {
     "exclude": [
+      "log4js.json",
       "^data/",
-      ".*dist.*/",
-      "\\.md$"
+      "^definitions/",
+      "^log/",
+      ".*dist.*/"
     ],
-    "include": [
+    "include": [  
+      ".env",
       "\\.ts$",
       "\\.js$",
       "\\.json$"

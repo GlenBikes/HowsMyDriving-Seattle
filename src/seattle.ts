@@ -17,9 +17,6 @@ export const __REGION_NAME__: string = 'Seattle';
 
 import { log } from './logging';
 
-var fs = require('fs'),
-  path = require('path');
-
 // TODO: Consolidate these.
 const parkingAndCameraViolationsText =
     'Total __REGION__ parking and camera violations for #__LICENSE__: __COUNT__',
