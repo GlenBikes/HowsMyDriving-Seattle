@@ -1,0 +1,21 @@
+{
+  "delay": "2000ms",
+  "ext": "json,js,ts",
+  "verbose": true,
+  "ignore": [
+    ".aws/**/*",
+    "dist/**/*", 
+    "definitions/**/*", 
+    ".data/**/*", 
+    ".env",
+    ".config/**/*",
+    ".git/**/*",
+    ".glitch*/**/*",
+    ".localstore/**/*",
+    "log/**/*",
+    "node_modules/**/*",
+    ".v*/**/*"
+  ],
+  "execMap": {
+  }
+}

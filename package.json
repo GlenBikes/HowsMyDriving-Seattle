@@ -1,6 +1,6 @@
 {
   "name": "howsmydriving-seattle",
-  "version": "0.1.50",
+  "version": "0.1.59",
   "description": "Seattle region plug-in for @HowsMyDrivingWA.",
   "declaration": true,
   "main": "./dist/index.js",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@types/node": "^12.12.14",
     "chokidar": "^3.3.0",
-    "howsmydriving-utils": "^0.1.112",
+    "howsmydriving-utils": "^0.1.122",
     "log4js": "^4.0.2",
     "packpath": "^0.1.0",
     "soap": "^0.30.0",
@@ -28,6 +28,7 @@
     "merge2": "^1.3.0",
     "mocha": "^6.2.2",
     "mocha-typescript": "^1.1.17",
+    "nodemon": "^2.0.2",
     "prettier": "^1.19.1",
     "sinon": "^7.5.0",
     "standard-version": "^7.0.1",
@@ -43,7 +44,7 @@
   ],
   "scripts": {
     "build": "gulp clean && gulp build && gulp test",
-    "start": "gulp build && node dist/index.js",
+    "start": "gulp build && nodemon",
     "test": "gulp test",
     "release": "standard-version"
   },
