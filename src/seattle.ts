@@ -3,15 +3,21 @@
 // Imports
 import { Client as SOAPClient } from 'soap';
 import { createClient as CreateSOAPClient } from 'soap';
+import * as RestClient from 'typed-rest-client/RestClient';
 
-import { ICitation } from 'howsmydriving-utils';
-import { Citation } from 'howsmydriving-utils';
-import { CitationIds } from 'howsmydriving-utils';
+import {
+  ICitation,
+  ICollision,
+  IRegion,
+  Citation,
+  CitationIds,
+  Collision,
+  Region,
+  StatesAndProvinces
+} from 'howsmydriving-utils';
 import { CompareNumericStrings } from 'howsmydriving-utils';
 import { DumpObject } from 'howsmydriving-utils';
 import { formatPlate } from 'howsmydriving-utils';
-import { Region } from 'howsmydriving-utils';
-import { StatesAndProvinces } from 'howsmydriving-utils';
 
 export const __REGION_NAME__: string = 'Seattle';
 
@@ -120,9 +126,22 @@ export class SeattleRegion extends Region {
             log.debug(
               `Getting citations for ${state}:${plate} vehicle ${vehicle.VehicleNumber} in ${__REGION_NAME__} region.`
             );
+
             let citations: Array<ICitation> = await this.GetCitationsByVehicleNum(
+              vehicle.VehicleNumber,
+              plate,
+              state
+            ).catch(err => {
+              throw err;
+            });
+
+            let cases: Array<any> = await this.GetCasesByVehicleNum(
               vehicle.VehicleNumber
-            );
+            ).catch(err => {
+              throw err;
+            });
+
+            log.info(DumpObject(cases));
 
             citations.forEach((citation: ICitation) => {
               // use the Citation field as the unique citation_id.
@@ -316,12 +335,20 @@ export class SeattleRegion extends Region {
     });
   }
 
-  GetCitationsByVehicleNum(vehicleID: number): Promise<Citation[]> {
+  GetCitationsByVehicleNum(
+    vehicleID: number,
+    plate: string,
+    state: string
+  ): Promise<Citation[]> {
     var args = {
-      VehicleNumber: vehicleID
+      VehicleNumber: vehicleID,
+      plate: plate,
+      state: state
     };
 
-    log.debug(`Getting citations for vehicle ID: ${vehicleID}.`);
+    log.debug(
+      `Getting citations for vehicle ID: ${vehicleID}, ${state}:${plate}.`
+    );
 
     return new Promise<ICitation[]>((resolve, reject) => {
       CreateSOAPClient(url, (err: Error, client: SOAPClient) => {
@@ -381,6 +408,199 @@ export class SeattleRegion extends Region {
         });
       });
     });
+  }
+
+  GetRecentCollisions(): Promise<Array<ICollision>> {
+    return Promise.all([
+      this.GetLastCollisionsWithCondition('FATALITIES>0', 1),
+      this.GetLastCollisionsWithCondition('SERIOUSINJURIES>0', 1),
+      this.GetLastCollisionsWithCondition('INJURIES>0', 1)
+    ]);
+  }
+
+  async ProcessCollisions(
+    collisions: Array<ICollision>
+  ): Promise<Array<string>> {
+    let delete_collisions: Array<ICollision> = [];
+    let tweets: Array<string> = [];
+
+    let collision_types = {
+      fatal: {
+        last_tweet_date: 0,
+        latest_collision: undefined
+      },
+      'serious injury': {
+        last_tweet_date: 0,
+        latest_collision: undefined
+      },
+      injury: {
+        last_tweet_date: 0,
+        latest_collision: undefined
+      }
+    };
+
+    log.info(`Getting collision records for ${this.name}...`);
+
+    Object.keys(collision_types).forEach(async collision_type => {
+      let key: string = `last_${collision_type}_tweet_date`;
+      log.info(`Getting StateStore value for ${key}.`);
+      let value: string = await this.state_store.GetStateValue(key);
+      collision_types[collision_type].last_tweet_date = parseInt(value);
+    });
+
+    log.info(
+      `Retrieved ${collisions.length} collision records for ${this.name}...`
+    );
+
+    var fatality_collision: ICollision;
+    var serious_injury_collision: ICollision;
+    var injury_collision: ICollision;
+
+    collisions.forEach(collision => {
+      log.info(`Processing collision ${collision.id}`);
+      let collision_type: string = this.getCollisionType(collision);
+
+      if (
+        !collision_types[collision_type].latest_collision ||
+        collision_types[collision_type].latest_collision.date_time <
+          collision.date_time
+      ) {
+        log.debug(
+          `Collision ${collision.id} is a ${collision_type} collision.`
+        );
+        collision_types[collision_type].latest_collision = collision;
+      } else {
+        // This is no longer the most recent fatality collision record.
+        // Add it to list of records to mark processed.
+        delete_collisions.push(collision);
+      }
+    });
+
+    // Fatalities are serious injuries which are injuries.
+    if (!collision_types['serious injury'].latest_collision) {
+      collision_types['serious injury'].latest_collision;
+    }
+    if (!collision_types['injury'].latest_collision) {
+      collision_types['injury'].latest_collision;
+    }
+    let now: number = Date.now();
+
+    log.debug(`Checking to see if we will tweet anything...`);
+
+    // Tweet last fatal collision once per month and
+    // whenever there is a new one.
+    Object.keys(collision_types).forEach(async collision_type => {
+      let tweet: string = this.getTweetFromCollision(
+        collision_types[collision_type].latest_collision,
+        collision_type,
+        collision_types[collision_type].last_tweet_date
+      );
+      if (tweet && tweet.length) {
+        tweets.push(tweet);
+      }
+    });
+
+    log.trace(`Returning tweets: ${DumpObject(tweets)}`);
+    return tweets;
+  }
+
+  private GetLastCollisionsWithCondition(
+    condition: string,
+    count: number = 1
+  ): Promise<ICollision> {
+    return new Promise<ICollision>((resolve, reject) => {
+      const restc = new RestClient.RestClient('SDOT-Crashes');
+      const url = `https://gisdata.seattle.gov/server/rest/services/SDOT/SDOT_Collisions/MapServer/0/query?where=${condition}&outFields=*&outSR=4326&f=json&orderByFields=INCDATE DESC&resultRecordCount=${count}`;
+      log.info(`Making REST call: ${url}`);
+      const resp = restc.get(url);
+      resp.then(response => {
+        try {
+          let collision = new Collision({
+            id: `${response['result']['features'][0]['attributes']['INCKEY']}-${response['result']['features'][0]['attributes']['COLDETKEY']}`,
+            x: response['result']['features'][0]['geometry']['x'],
+            y: response['result']['features'][0]['geometry']['y'],
+            date_time:
+              response['result']['features'][0]['attributes']['INCDATE'],
+            date_time_str:
+              response['result']['features'][0]['attributes']['INCDTTM'],
+            location:
+              response['result']['features'][0]['attributes']['LOCATION'],
+            ped_count:
+              response['result']['features'][0]['attributes']['PEDCOUNT'],
+            cycler_count:
+              response['result']['features'][0]['attributes']['PEDCYLCOUNT'],
+            person_count:
+              response['result']['features'][0]['attributes']['PERSONCOUNT'],
+            vehicle_count:
+              response['result']['features'][0]['attributes']['VEHCOUNT'],
+            injury_count:
+              response['result']['features'][0]['attributes']['INJURIES'],
+            serious_injury_count:
+              response['result']['features'][0]['attributes'][
+                'SERIOUSINJURIES'
+              ],
+            fatality_count:
+              response['result']['features'][0]['attributes']['FATALITIES'],
+            // TODO: What does a DUI crash look like?
+            dui:
+              response['result']['features'][0]['attributes']['UNDERINFL'] ===
+              'Y'
+          } as ICollision);
+
+          resolve(collision);
+        } catch (err) {
+          log.error(`Error: ${DumpObject(err)}.`);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  getCollisionType(collision: ICollision): string {
+    var type: string;
+
+    if (collision.fatality_count > 0) {
+      type = 'fatal';
+    } else if (collision.serious_injury_count > 0) {
+      type = 'serious injury';
+    } else if (collision.injury_count > 0) {
+      type = 'injury';
+    } else {
+      throw new Error(
+        `Invalid collision record found: ${DumpObject(collision)}`
+      );
+    }
+
+    return type;
+  }
+
+  getTweetFromCollision(
+    collision: ICollision,
+    collision_type: string,
+    last_tweeted: number
+  ) {
+    let tweet: string = undefined;
+
+    if (
+      collision.date_time > last_tweeted ||
+      new Date(last_tweeted).getMonth() < new Date().getMonth()
+    ) {
+      log.info(
+        `Tweeting last ${collision_type} collision from ${collision.date_time_str}.`
+      );
+
+      tweet = `Last ${this.name} ${collision_type} collision from ${collision.date_time_str}.`;
+    } else {
+      log.info(
+        `Not tweeting last ${collision_type} collision: ${
+          collision.date_time
+        } <= ${last_tweeted} or ${new Date(
+          last_tweeted
+        ).getMonth()} >= ${new Date().getMonth()}.`
+      );
+    }
+
+    return tweet;
   }
 }
 

@@ -1,17 +1,30 @@
 const { series, parallel, src, dest } = require('gulp');
+
+var gulp = require('gulp');
+
 const gulp_prettier = require('gulp-prettier');
 const ts = require('gulp-typescript');
 const mocha = require('gulp-mocha');
 const del = require('del');
 const path = require('path');
 
-exports.build = series(clean, pretty_check, parallel(build, copyconfigfiles));
+exports.rebuild = series(
+  clean,
+  pretty_check,
+  parallel(build, copyconfigfiles),
+  test
+);
 exports.clean = clean;
 exports.copyconfigfiles = copyconfigfiles;
 exports.test = test;
 exports.pretty = pretty;
 exports.pretty_check = pretty_check;
-exports.default = series(clean, pretty_check, build, copyconfigfiles);
+exports.default = series(
+  clean,
+  pretty_check,
+  parallel(build, copyconfigfiles),
+  test
+);
 
 const tsProject = ts.createProject('./tsconfig.json');
 
@@ -40,7 +53,7 @@ function test(cb) {
 }
 
 function copyconfigfiles(cb) {
-  return src('./config/*.json').pipe(dest('./dist/config/'));
+  return src('./config/**/*.json').pipe(dest('./dist/config/'));
 }
 
 function pretty(cb) {

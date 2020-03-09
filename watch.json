@@ -13,7 +13,7 @@
       "^log/",
       ".*dist.*/"
     ],
-    "include": [  
+    "include": [
       ".env",
       "\\.ts$",
       "\\.js$",
