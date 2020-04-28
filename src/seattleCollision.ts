@@ -1,4 +1,6 @@
-import { Collision, ICollision, DateDiffStr } from 'howsmydriving-utils';
+const moment = require('moment');
+
+import { Collision, ICollision } from 'howsmydriving-utils';
 
 export class SeattleCollision extends Collision {
   [index: string]: any;
@@ -9,13 +11,14 @@ export class SeattleCollision extends Collision {
   toString = (): string => {
     let now_date: Date = new Date();
     let collision_date = new Date(this.date_time);
+    let now_moment = moment();
+    let collision_moment = moment(new Date(this.date_time));
 
-    let ret = `It has been ${DateDiffStr(
-      new Date(this.date_time),
-      now_date
-    )} since the last ${this.getType()} collision in ${
+    let ret = `It has been ${moment
+      .duration(Date.now() - this.date_time, 'ms')
+      .humanize()} since the last ${this.getType()} collision in ${
       this.region
-    }\n\nCollision Date: ${collision_date.toDateString()} ${collision_date.toLocaleTimeString()}\nLocation: ${
+    }\n\nCollision Date: ${collision_moment.format('LLLL')}\nLocation: ${
       this.location
     }\nVehicles involved: ${this.vehicle_count}\nPeople involved: ${
       this.person_count

@@ -1,8 +1,9 @@
 dependencies:
   '@types/node': 12.12.17
   chokidar: 3.3.0
-  howsmydriving-utils: 0.1.187
+  howsmydriving-utils: 0.1.190
   log4js: 4.5.1
+  moment: 2.24.0
   packpath: 0.1.0
   soap: 0.30.0
   typed-rest-client: 1.7.1
@@ -664,7 +665,7 @@ packages:
       fsevents: 2.1.2
     resolution:
       integrity: sha512-dGmKLDdT3Gdl7fBUe8XK+gAtGmzy5Fn0XkkWQuYxGIgWVPPse2CxFA5mtrlD0TOHaHjEUqkWNyP1XdHoJES/4A==
-  /chokidar/3.3.1:
+  /chokidar/3.4.0:
     dependencies:
       anymatch: 3.1.1
       braces: 3.0.2
@@ -672,14 +673,14 @@ packages:
       is-binary-path: 2.1.0
       is-glob: 4.0.1
       normalize-path: 3.0.0
-      readdirp: 3.3.0
+      readdirp: 3.4.0
     dev: false
     engines:
       node: '>= 8.10.0'
     optionalDependencies:
       fsevents: 2.1.3
     resolution:
-      integrity: sha512-4QYCEWOcK3OJrxwvyyAOxFuhpvOVCYkr33LPfFNBjAD/w3sEzWsp2BUOkI4l9bHvWioAd0rc6NlHUOEaWkTeqg==
+      integrity: sha512-aXAaho2VJtisB/1fg1+3nlLJqGOuewTzQpd/Tz0yTg2R0e4IGtshYvtjowyEumcBv2z+y4+kc75Mz7j5xJskcQ==
   /class-utils/0.3.6:
     dependencies:
       arr-union: 3.1.0
@@ -1037,7 +1038,7 @@ packages:
   /core-util-is/1.0.2:
     resolution:
       integrity: sha1-tf1UIgqivFq1eqtxQMlAdUUDwac=
-  /coveralls/3.0.14:
+  /coveralls/3.1.0:
     dependencies:
       js-yaml: 3.13.1
       lcov-parse: 1.0.0
@@ -1049,7 +1050,7 @@ packages:
       node: '>=6'
     hasBin: true
     resolution:
-      integrity: sha512-nEQqCHzxiFfu1dEHYxe7xrbF5vFmx122mTWIM+BkiAOmsWbSAcucNk8stELnNk2lS1biTUjFOCIf8v8ZN225IA==
+      integrity: sha512-sHxOu2ELzW8/NC1UP5XVLbZDzO4S3VxfFye3XYCznopHy02YjNkHcj5bKaVw2O7hVaBdBjEdQGpie4II1mWhuQ==
   /cross-spawn/6.0.5:
     dependencies:
       nice-try: 1.0.5
@@ -1655,7 +1656,7 @@ packages:
       integrity: sha512-qOo9F+dMUmC2Lcb4BbVvnKJxTPjCm+RRpe4gDuGrzkL7mEVl/djYSu2OdQ2Pa302N4oqkSg9ir6jaLWJ2USVpQ==
   /find-port-free-sync/1.0.1:
     dependencies:
-      coveralls: 3.0.14
+      coveralls: 3.1.0
       istanbul: 0.4.5
     dev: false
     resolution:
@@ -2334,13 +2335,13 @@ packages:
     dev: true
     resolution:
       integrity: sha512-kssjab8CvdXfcXMXVcvsXum4Hwdq9XGtRD3TteMEvEbq0LXyiNQr6AprqKqfeaDXze7SxWvRxdpwE6ku7ikLkg==
-  /howsmydriving-twitter/0.1.122:
+  /howsmydriving-twitter/0.1.127:
     dependencies:
       app-root-dir: 1.0.2
       app-root-path: 3.0.0
-      chokidar: 3.3.1
+      chokidar: 3.4.0
       file-system: 2.2.2
-      howsmydriving-utils: 0.1.187
+      howsmydriving-utils: 0.1.190
       log4js: 4.5.1
       mime: 2.4.4
       node-downloader-helper: 1.0.12
@@ -2353,14 +2354,14 @@ packages:
     engines:
       node: 10.x
     resolution:
-      integrity: sha512-YMtLAdRE76t+ZPxhll7zwYGiBSN2ytoq9fY2T9npyhTw1lSjzzcI/K1GAyrSnLxGWAt2DMPK9NqzDQKAi1GcCw==
-  /howsmydriving-utils/0.1.187:
+      integrity: sha512-8uxh35fk7IWvqJtN8VbQKpH4UG1QFhQJZE8q0+Hjo4HvNc+RBzEoQH0wUTm4wMwrxemQn8xfd/IFJuUjrtVlFg==
+  /howsmydriving-utils/0.1.190:
     dependencies:
       '@types/node': 12.12.37
       '@types/uuid': 3.4.9
-      chokidar: 3.3.1
+      chokidar: 3.4.0
       find-port-free-sync: 1.0.1
-      howsmydriving-twitter: 0.1.122
+      howsmydriving-twitter: 0.1.127
       log4js: 6.2.1
       merge2: 1.3.0
       packpath: 0.1.0
@@ -2369,7 +2370,7 @@ packages:
     engines:
       node: 11.15.0
     resolution:
-      integrity: sha512-BrT8bdSEHZI9zKTu3/4yzPMZGB1kvf6YChlVDy/d/XAW8QZC+GHZjRQIDIA3HKq/FOSFcsFcnOYkm6MXoOEMyQ==
+      integrity: sha512-p/d3MAV7AsMmTgOogkgcVY0VcrTfCPcDpwO2GitTeYplUJenflO++XdL/zY7xceFJ0Lzc68b9fLUWo7jGR0JlA==
   /http-errors/1.7.3:
     dependencies:
       depd: 1.1.2
@@ -3249,12 +3250,12 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-UbfJCR4UAVRNgMpfImz05smAXK7+c+ZntjaA26ANtkXLlOe947Aag5zdIcKQULAiF9Cq4WxBi9jUs5zkA84bYQ==
-  /mime-db/1.43.0:
+  /mime-db/1.44.0:
     dev: false
     engines:
       node: '>= 0.6'
     resolution:
-      integrity: sha512-+5dsGEEovYbT8UY9yD7eE4XTc4UwJ1jBYlgaQQF38ENsKR3wj/8q8RFZrF9WIZpB2V1ArTVFUva8sAul1NzRzQ==
+      integrity: sha512-/NOTfLrsPBVeH7YtFPgsVWveuL+4SjjYxaQ1xtM1KMFj7HdxlBlxeyNLzhyJVx7r4rZGJAZ/6lkKCitSc/Nmpg==
   /mime-types/2.1.25:
     dependencies:
       mime-db: 1.42.0
@@ -3263,14 +3264,14 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-5KhStqB5xpTAeGqKBAMgwaYMnQik7teQN4IAzC7npDv6kzeU6prfkR67bc87J1kWMPGkoaZSq1npmexMgkmEVg==
-  /mime-types/2.1.26:
+  /mime-types/2.1.27:
     dependencies:
-      mime-db: 1.43.0
+      mime-db: 1.44.0
     dev: false
     engines:
       node: '>= 0.6'
     resolution:
-      integrity: sha512-01paPWYgLrkqAyrlDorC1uDwl2p3qZT7yl806vW7DvDoxwXi46jsjFbg+WdwotBIk6/MbEhO/dh5aZ5sNj/dWQ==
+      integrity: sha512-JIhqnCasI9yD+SsmkquHBxTSEuZdQX5BuQnS2Vc7puQQQ+8yiP5AY5uWhpdv4YL4VM5c6iliiYWPgJ/nJQLp7w==
   /mime/1.6.0:
     dev: false
     engines:
@@ -3391,6 +3392,10 @@ packages:
       node: '>=0.10.0'
     resolution:
       integrity: sha512-xV2bxeN6F7oYjZWTe/YPAy6MN2M+sL4u/Rlm2AHCIVGfo2p1yGmBHQ6vHehl4bRTZBdHu3TSkWdYgkwpYzAGSw==
+  /moment/2.24.0:
+    dev: false
+    resolution:
+      integrity: sha512-bV7f+6l2QigeBBZSM/6yTNq4P2fNpSWj/0e7jQcy87A8e7o2nAfP/34/2ky5Vw4B9S446EtIhodAzkFCcR4dQg==
   /ms/2.0.0:
     resolution:
       integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=
@@ -4152,14 +4157,14 @@ packages:
       node: '>= 8'
     resolution:
       integrity: sha512-crk4Qu3pmXwgxdSgGhgA/eXiJAPQiX4GMOZZMXnqKxHX7TaoL+3gQVo/WeuAiogr07DpnfjIMpXXa+PAIvwPGQ==
-  /readdirp/3.3.0:
+  /readdirp/3.4.0:
     dependencies:
       picomatch: 2.2.2
     dev: false
     engines:
       node: '>=8.10.0'
     resolution:
-      integrity: sha512-zz0pAkSPOXXm1viEwygWIPSPkcBYjW1xU5j/JBh5t9bGCJwa6f9+BJa6VaB2g+b55yVrmXzqkyLf4xaWYM0IkQ==
+      integrity: sha512-0xe001vZBnJEK+uKcj8qOhyAKPzIT+gStxWr3LCB0DwcXR5NZJ3IaC+yGnHCYzB/S7ov3m3EEbZI2zeNvX+hGQ==
   /rechoir/0.6.2:
     dependencies:
       resolve: 1.13.1
@@ -4295,7 +4300,7 @@ packages:
       is-typedarray: 1.0.0
       isstream: 0.1.2
       json-stringify-safe: 5.0.1
-      mime-types: 2.1.26
+      mime-types: 2.1.27
       oauth-sign: 0.9.0
       performance-now: 2.1.0
       qs: 6.5.2
@@ -5602,11 +5607,12 @@ specifiers:
   gulp-mocha: ^7.0.2
   gulp-prettier: ^2.3.0
   gulp-typescript: ^6.0.0-alpha.1
-  howsmydriving-utils: ^0.1.187
+  howsmydriving-utils: ^0.1.190
   log4js: ^4.0.2
   merge2: ^1.3.0
   mocha: ^6.2.2
   mocha-typescript: ^1.1.17
+  moment: ^2.24.0
   packpath: ^0.1.0
   prettier: ^1.19.1
   sinon: ^7.5.0

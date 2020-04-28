@@ -1,14 +1,14 @@
 var assert = require('assert'),
   sinon = require('sinon');
 
-import { DateDiffStr, DumpObject, ICollision } from 'howsmydriving-utils';
+import { DumpObject, ICollision } from 'howsmydriving-utils';
 
 import { SeattleCollision } from '../src/seattleCollision';
 
 import { Factory, ISeattleRegion, SeattleRegion } from '../src/seattle';
 import { MockStateStore } from './mocks/statestore';
 
-describe('Collision history', function() {
+describe('Collision tests', function() {
   describe('Get last fatal/injury collision', function() {
     it('Should return a single ICollision with a date prior to today', done => {
       // These aren't really unit tests since they make calls to the seattle opendata endpoints.
@@ -47,6 +47,7 @@ describe('Collision history', function() {
         x: -122.31346221462668,
         y: 47.567243070925294,
         location: 'In Seattle anywhere',
+        region: 'Fake City',
         ped_count: 1,
         cycler_count: 2,
         person_count: 4,

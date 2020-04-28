@@ -5,6 +5,8 @@ import { Client as SOAPClient } from 'soap';
 import { createClient as CreateSOAPClient } from 'soap';
 import * as RestClient from 'typed-rest-client/RestClient';
 
+const moment = require('moment');
+
 import {
   Citation,
   ICitation,
@@ -12,8 +14,6 @@ import {
   Collision,
   ICollision,
   CompareNumericStrings,
-  DateDiff,
-  DateDiffStr,
   DumpObject,
   formatPlate,
   MediaItem,
@@ -132,7 +132,7 @@ export class SeattleRegion extends Region {
   readonly initialize_promise: Promise<Region>;
 
   collision_types = {
-    fatal: {
+    fatality: {
       last_tweet_date: 0,
       tweet_frequency_days: 7
     },
@@ -605,10 +605,9 @@ export class SeattleRegion extends Region {
             log.info(
               `About to check date_time. ${collision_type} last tweet date: ${
                 this.collision_types[collision_type].last_tweet_date
-              } now: ${now} difference is ${DateDiff(
-                'd',
-                new Date(this.collision_types[collision_type].last_tweet_date),
-                date_now
+              } now: ${now} difference is ${moment(date_now).diff(
+                moment(this.collision_types[collision_type].last_tweet_date),
+                'days'
               )} days, tweet every ${
                 this.collision_types[collision_type].tweet_frequency_days
               } days...`
@@ -630,10 +629,12 @@ export class SeattleRegion extends Region {
 
           // Fatalities are serious injuries which are injuries.
           if (!latest_collisions['serious injury'].latest_collision) {
-            latest_collisions['serious injury'].latest_collision;
+            latest_collisions['serious injury'].latest_collision =
+              latest_collisions['fatality'].latest_collision;
           }
           if (!latest_collisions['injury'].latest_collision) {
-            latest_collisions['injury'].latest_collision;
+            latest_collisions['injury'].latest_collision =
+              latest_collisions['serious injury'].latest_collision;
           }
 
           log.debug(`Checking to see if we will tweet anything...`);
@@ -671,12 +672,9 @@ export class SeattleRegion extends Region {
               log.trace(
                 `Not tweeting ${collision_type} last tweet date: ${
                   this.collision_types[collision_type].last_tweet_date
-                } now: ${now} difference is ${DateDiff(
-                  'd',
-                  new Date(
-                    this.collision_types[collision_type].last_tweet_date
-                  ),
-                  date_now
+                } now: ${now} difference is ${moment(date_now).diff(
+                  moment(this.collision_types[collision_type].last_tweet_date),
+                  'days'
                 )} days, tweet every ${
                   this.collision_types[collision_type].tweet_frequency_days
                 } days...`
@@ -709,7 +707,7 @@ export class SeattleRegion extends Region {
     var type: string;
 
     if (collision.fatality_count > 0) {
-      type = 'fatal';
+      type = 'fatality';
     } else if (collision.serious_injury_count > 0) {
       type = 'serious injury';
     } else if (collision.injury_count > 0) {
@@ -766,10 +764,9 @@ export class SeattleRegion extends Region {
     let collision_type: string = SeattleRegion.getCollisionType(collision);
 
     if (collision && this.collision_types[collision_type]) {
-      let days_diff: number = DateDiff(
-        'd',
-        new Date(this.collision_types[collision_type].last_tweet_date),
-        new Date()
+      let days_diff: number = moment(Date.now()).diff(
+        moment(this.collision_types[collision_type].last_tweet_date),
+        'days'
       );
 
       if (
