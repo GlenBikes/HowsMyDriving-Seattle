@@ -26,7 +26,17 @@ import {
   IStateStore
 } from 'howsmydriving-utils';
 
-import { SeattleCollision } from './seattleCollision';
+import { ISeattleCollision, SeattleCollision } from './seattleCollision';
+
+import { ISeattleCitation } from './seattleCitation';
+
+import {
+  IGetCitationsByVehicleNumberResult,
+  ISeattleGetVehicleByPlateResult,
+  ISeattleVehicle
+} from './seattleVehicle';
+
+import { SeattleRegionFactory } from './factory';
 
 export const __REGION_NAME__: string = 'Seattle';
 
@@ -45,80 +55,12 @@ const parkingAndCameraViolationsText =
 var url =
   'https://web6.seattle.gov/Courts/ECFPortal/JSONServices/ECFControlsService.asmx?wsdl';
 
-// interfaces - TODO: Move to declaration files.
-interface ISeattleCitation extends ICitation {
-  [index: string]: any;
-  Citation: number;
-  Type: string;
-  Status: string;
-  ViolationDate: string;
-  ViolationLocation: string;
-}
-
-class SeattleCitation extends Citation {
-  [index: string]: any;
-  constructor(citation: Citation) {
-    super(citation);
-
-    // If passed an existing instance, copy over the properties.
-    if (arguments.length > 0) {
-      for (var p in citation) {
-        if (citation.hasOwnProperty(p)) {
-          this[p] = citation[p];
-        }
-      }
-    }
-    this.region = __REGION_NAME__;
-  }
-
-  Citation: number;
-  Type: string;
-  Status: string;
-  ViolationDate: string;
-  ViolationLocation: string;
-}
-
-interface ISeattleVehicle {
-  VehicleNumber: number;
-  Make: string;
-  Model: string;
-  Year: string;
-  State: string;
-  Plate: string;
-  ExpirationYear: string;
-  Color: string;
-  Style: string;
-  Dealer: string;
-  VIN: string;
-  PlateType: string;
-  DOLReceivedDate: string;
-  DOLRequestDate: string;
-}
-
-interface ISeattleGetVehicleByPlateResult {
-  GetVehicleByPlateResult: string;
-}
-
-interface IGetCitationsByVehicleNumberResult {
-  GetCitationsByVehicleNumberResult: string;
-}
-
-export class SeattleRegionFactory extends RegionFactory {
-  public name: string = __REGION_NAME__;
-
-  public createRegion(state_store: IStateStore): Promise<Region> {
-    let region: SeattleRegion = new SeattleRegion(state_store);
-
-    return region.initialize_promise;
-  }
-}
-
 export interface ISeattleRegion extends IRegion {
   shouldTweet(collision: ICollision): boolean;
 }
 
 // Classes
-export class SeattleRegion extends Region {
+export class SeattleRegion extends Region implements ISeattleRegion {
   constructor(state_store: IStateStore) {
     super(__REGION_NAME__, state_store);
 
@@ -525,7 +467,7 @@ export class SeattleRegion extends Region {
             `getLastCollisionsWithCondition: Creating collision record with id ${id}...`
           );
 
-          let collision = new Collision({
+          let collision = new SeattleCollision({
             id: id,
             x: response['result']['features'][0]['geometry']['x'],
             y: response['result']['features'][0]['geometry']['y'],
@@ -555,7 +497,7 @@ export class SeattleRegion extends Region {
             dui:
               response['result']['features'][0]['attributes']['UNDERINFL'] ===
               'Y'
-          } as ICollision);
+          } as any);
 
           Object.assign(
             collision,
@@ -578,7 +520,7 @@ export class SeattleRegion extends Region {
       let tweets: Array<string> = [];
 
       let latest_collisions = {
-        fatal: {
+        fatality: {
           latest_collision: undefined
         },
         'serious injury': {
@@ -595,7 +537,7 @@ export class SeattleRegion extends Region {
           let date_now: Date = new Date();
 
           collisions.forEach(collision => {
-            let seattle_collision = new SeattleCollision(collision);
+            let seattle_collision = new SeattleCollision(collision as any);
             let collision_type: string = SeattleRegion.getCollisionType(
               collision
             );
@@ -743,8 +685,6 @@ export class SeattleRegion extends Region {
         url: `https://maps.googleapis.com/maps/api/staticmap?markers=${collision.y},${collision.x}&zoom=14&size=400x400&key=AIzaSyCK7loPQ04_Ec3uPZIHTPLuTdz1kYU1_xk`,
         alt_text: `Map with pin on ${collision.location}`
       } as IMediaItem);
-
-      log.info(`About to stringify media item: ${DumpObject(media_item)}`);
 
       tweet = `${collision.toString()}||${JSON.stringify([media_item])}`;
     } else {

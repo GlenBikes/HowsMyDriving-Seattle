@@ -56,7 +56,7 @@ describe('Collision tests', function() {
         serious_injury_count: 1,
         fatality_count: 1,
         dui: false
-      });
+      } as any);
 
       assert.notEqual(
         collision.toString(),
@@ -73,10 +73,10 @@ describe('Collision tests', function() {
   });
 
   describe('Check tweet freshness logic', function() {
-    it('Should not tweet again within a day', done => {
-      // These aren't really unit tests since they make calls to the seattle opendata endpoints.
-      this.timeout(5000);
+    // These aren't really unit tests since they make calls to the seattle opendata endpoints.
+    this.timeout(5000);
 
+    it('Should not tweet again within a day', done => {
       Factory.createRegion(new MockStateStore('TestRegion', Date.now()))
         .then(mockRegion => {
           mockRegion
