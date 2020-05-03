@@ -3,19 +3,45 @@
 // Imports
 import { Client as SOAPClient } from 'soap';
 import { createClient as CreateSOAPClient } from 'soap';
+import * as RestClient from 'typed-rest-client/RestClient';
 
-import { ICitation } from 'howsmydriving-utils';
-import { Citation } from 'howsmydriving-utils';
-import { CitationIds } from 'howsmydriving-utils';
-import { CompareNumericStrings } from 'howsmydriving-utils';
-import { DumpObject } from 'howsmydriving-utils';
-import { formatPlate } from 'howsmydriving-utils';
-import { Region } from 'howsmydriving-utils';
-import { StatesAndProvinces } from 'howsmydriving-utils';
+const moment = require('moment');
+
+import {
+  Citation,
+  ICitation,
+  CitationIds,
+  Collision,
+  ICollision,
+  CompareNumericStrings,
+  DumpObject,
+  formatPlate,
+  MediaItem,
+  IMediaItem,
+  MediaItemsFromString,
+  IRegion,
+  Region,
+  RegionFactory,
+  StatesAndProvinces,
+  IStateStore
+} from 'howsmydriving-utils';
+
+import { ISeattleCollision, SeattleCollision } from './seattleCollision';
+
+import { ISeattleCitation } from './seattleCitation';
+
+import {
+  IGetCitationsByVehicleNumberResult,
+  ISeattleGetVehicleByPlateResult,
+  ISeattleVehicle
+} from './seattleVehicle';
+
+import { SeattleRegionFactory } from './factory';
 
 export const __REGION_NAME__: string = 'Seattle';
 
 import { log } from './logging';
+import { MockStateStore } from '../test/mocks/statestore';
 
 // TODO: Consolidate these.
 const parkingAndCameraViolationsText =
@@ -29,79 +55,89 @@ const parkingAndCameraViolationsText =
 var url =
   'https://web6.seattle.gov/Courts/ECFPortal/JSONServices/ECFControlsService.asmx?wsdl';
 
-// interfaces - TODO: Move to declaration files.
-interface ISeattleCitation extends ICitation {
-  [index: string]: any;
-  Citation: number;
-  Type: string;
-  Status: string;
-  ViolationDate: string;
-  ViolationLocation: string;
-}
-
-class SeattleCitation extends Citation {
-  [index: string]: any;
-  constructor(citation: Citation) {
-    super(citation);
-
-    // If passed an existing instance, copy over the properties.
-    if (arguments.length > 0) {
-      for (var p in citation) {
-        if (citation.hasOwnProperty(p)) {
-          this[p] = citation[p];
-        }
-      }
-    }
-    this.region = __REGION_NAME__;
-  }
-
-  Citation: number;
-  Type: string;
-  Status: string;
-  ViolationDate: string;
-  ViolationLocation: string;
-}
-
-interface ISeattleVehicle {
-  VehicleNumber: number;
-  Make: string;
-  Model: string;
-  Year: string;
-  State: string;
-  Plate: string;
-  ExpirationYear: string;
-  Color: string;
-  Style: string;
-  Dealer: string;
-  VIN: string;
-  PlateType: string;
-  DOLReceivedDate: string;
-  DOLRequestDate: string;
-}
-
-interface ISeattleGetVehicleByPlateResult {
-  GetVehicleByPlateResult: string;
-}
-
-interface IGetCitationsByVehicleNumberResult {
-  GetCitationsByVehicleNumberResult: string;
+export interface ISeattleRegion extends IRegion {
+  shouldTweet(collision: ICollision): boolean;
 }
 
 // Classes
-export class SeattleRegion extends Region {
-  constructor() {
-    super(__REGION_NAME__);
+export class SeattleRegion extends Region implements ISeattleRegion {
+  constructor(state_store: IStateStore) {
+    super(__REGION_NAME__, state_store);
 
     log.debug(
       `Creating instance of ${this.name} for region ${__REGION_NAME__}`
     );
+
+    this.initialize_promise = this.InitializeCollisionInfo();
   }
 
-  GetCitationsByPlate(plate: string, state: string): Promise<Array<Citation>> {
+  readonly initialize_promise: Promise<Region>;
+
+  collision_types = {
+    fatality: {
+      last_tweet_date: 0,
+      tweet_frequency_days: 7
+    },
+    'serious injury': {
+      last_tweet_date: 0,
+      tweet_frequency_days: 7
+    },
+    injury: {
+      last_tweet_date: 0,
+      tweet_frequency_days: 7
+    }
+  };
+
+  InitializeCollisionInfo(): Promise<Region> {
+    return new Promise<Region>((resolve, reject) => {
+      let state_store_promises: Array<Promise<string>> = [];
+
+      log.info(
+        `Getting last tweet date for collision types for ${__REGION_NAME__}...`
+      );
+
+      Object.keys(this.collision_types).forEach(async collision_type => {
+        let key: string = `last_${collision_type}_tweet_date`;
+        let value: string = await this.state_store.GetStateValueAsync(key);
+
+        this.collision_types[collision_type].last_tweet_date = parseInt(value);
+        /*
+        let get_value_promise: Promise<string> = this.state_store
+          .GetStateValueAsync(key)
+          .then(value => {
+            log.info(`Retrieved StateStore value for ${key}: ${value}.`);
+            this.collision_types[collision_type].last_tweet_date = parseInt(
+              value
+            );
+
+            return this.collision_types[collision_type].last_tweet_date;
+          })
+          .catch(err => {
+            throw err;
+          });
+
+        state_store_promises.push(get_value_promise);
+        */
+      });
+      resolve(this);
+      /*
+      Promise.all(state_store_promises)
+        .then(values => {
+          resolve(this);
+        })
+        .catch(err => {
+          throw err;
+        });
+      */
+    });
+  }
+
+  GetCitationsByPlate(plate: string, state: string): Promise<Array<ICitation>> {
     log.debug(
-      `Getting citations for ${state}:${plate} in region ${__REGION_NAME__}.`
+      `Getting citations for ${state}:${plate} in ${__REGION_NAME__} region.`
     );
-    return new Promise<Array<Citation>>((resolve, reject) => {
+
+    return new Promise<Array<ICitation>>((resolve, reject) => {
       let citations: Array<Citation> = [];
 
       log.debug(
@@ -120,9 +156,22 @@ export class SeattleRegion extends Region {
             log.debug(
               `Getting citations for ${state}:${plate} vehicle ${vehicle.VehicleNumber} in ${__REGION_NAME__} region.`
             );
+
             let citations: Array<ICitation> = await this.GetCitationsByVehicleNum(
+              vehicle.VehicleNumber,
+              plate,
+              state
+            ).catch(err => {
+              throw err;
+            });
+
+            let cases: Array<any> = await this.GetCasesByVehicleNum(
               vehicle.VehicleNumber
-            );
+            ).catch(err => {
+              throw err;
+            });
+
+            log.info(DumpObject(cases));
 
             citations.forEach((citation: ICitation) => {
               // use the Citation field as the unique citation_id.
@@ -138,7 +187,7 @@ export class SeattleRegion extends Region {
           );
 
           // Now put the unique citations back to an array
-          let allCitations: Array<Citation> = Object.keys(
+          let allCitations: Array<ICitation> = Object.keys(
             citationsByCitationID
           ).map(function(v) {
             return citationsByCitationID[v];
@@ -239,7 +288,6 @@ export class SeattleRegion extends Region {
 
     var sortedChronoCitationKeys = Object.keys(chronologicalCitations).sort(
       function(a: string, b: string) {
-        //return new Date(a).getTime() - new Date(b).getTime();
         return CompareNumericStrings(a, b); //(a === b) ? 0 : ( a < b ? -1 : 1);
       }
     );
@@ -316,12 +364,20 @@ export class SeattleRegion extends Region {
     });
   }
 
-  GetCitationsByVehicleNum(vehicleID: number): Promise<Citation[]> {
+  GetCitationsByVehicleNum(
+    vehicleID: number,
+    plate: string,
+    state: string
+  ): Promise<Citation[]> {
     var args = {
-      VehicleNumber: vehicleID
+      VehicleNumber: vehicleID,
+      plate: plate,
+      state: state
     };
 
-    log.debug(`Getting citations for vehicle ID: ${vehicleID}.`);
+    log.debug(
+      `Getting citations for vehicle ID: ${vehicleID}, ${state}:${plate}.`
+    );
 
     return new Promise<ICitation[]>((resolve, reject) => {
       CreateSOAPClient(url, (err: Error, client: SOAPClient) => {
@@ -382,6 +438,290 @@ export class SeattleRegion extends Region {
       });
     });
   }
+
+  GetRecentCollisions(): Promise<Array<ICollision>> {
+    return Promise.all([
+      this.getLastCollisionsWithCondition('FATALITIES>0', 1),
+      this.getLastCollisionsWithCondition('SERIOUSINJURIES>0', 1),
+      this.getLastCollisionsWithCondition('INJURIES>0', 1)
+    ]);
+  }
+
+  ProcessCollisions(collisions: Array<ICollision>): Promise<Array<string>> {
+    return this.processCollisionsForTweets(collisions);
+  }
+
+  private getLastCollisionsWithCondition(
+    condition: string,
+    count: number = 1
+  ): Promise<ICollision> {
+    return new Promise<ICollision>((resolve, reject) => {
+      const restc = new RestClient.RestClient('SDOT-Crashes');
+      const url = `https://gisdata.seattle.gov/server/rest/services/SDOT/SDOT_Collisions/MapServer/0/query?where=${condition}&outFields=*&outSR=4326&f=json&orderByFields=INCDATE DESC&resultRecordCount=${count}`;
+      log.trace(`Making REST call: ${url}`);
+      const resp = restc.get(url);
+      resp.then(response => {
+        try {
+          let id: string = `${response['result']['features'][0]['attributes']['INCKEY']}-${response['result']['features'][0]['attributes']['COLDETKEY']}`;
+          log.trace(
+            `getLastCollisionsWithCondition: Creating collision record with id ${id}...`
+          );
+
+          let collision = new SeattleCollision({
+            id: id,
+            x: response['result']['features'][0]['geometry']['x'],
+            y: response['result']['features'][0]['geometry']['y'],
+            date_time:
+              response['result']['features'][0]['attributes']['INCDATE'],
+            date_time_str:
+              response['result']['features'][0]['attributes']['INCDTTM'],
+            location:
+              response['result']['features'][0]['attributes']['LOCATION'],
+            ped_count:
+              response['result']['features'][0]['attributes']['PEDCOUNT'],
+            cycler_count:
+              response['result']['features'][0]['attributes']['PEDCYLCOUNT'],
+            person_count:
+              response['result']['features'][0]['attributes']['PERSONCOUNT'],
+            vehicle_count:
+              response['result']['features'][0]['attributes']['VEHCOUNT'],
+            injury_count:
+              response['result']['features'][0]['attributes']['INJURIES'],
+            serious_injury_count:
+              response['result']['features'][0]['attributes'][
+                'SERIOUSINJURIES'
+              ],
+            fatality_count:
+              response['result']['features'][0]['attributes']['FATALITIES'],
+            // TODO: What does a DUI crash look like?
+            dui:
+              response['result']['features'][0]['attributes']['UNDERINFL'] ===
+              'Y'
+          } as any);
+
+          Object.assign(
+            collision,
+            response['result']['features'][0]['attributes']
+          );
+
+          resolve(collision);
+        } catch (err) {
+          log.error(`Error: ${DumpObject(err)}.`);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  async processCollisionsForTweets(
+    collisions: Array<ICollision>
+  ): Promise<Array<string>> {
+    return new Promise<Array<string>>((resolve, reject) => {
+      let tweets: Array<string> = [];
+
+      let latest_collisions = {
+        fatality: {
+          latest_collision: undefined
+        },
+        'serious injury': {
+          latest_collision: undefined
+        },
+        injury: {
+          latest_collision: undefined
+        }
+      };
+
+      this.initialize_promise
+        .then(() => {
+          let now: number = Date.now();
+          let date_now: Date = new Date();
+
+          collisions.forEach(collision => {
+            let seattle_collision = new SeattleCollision(collision as any);
+            let collision_type: string = SeattleRegion.getCollisionType(
+              collision
+            );
+
+            log.info(`Processing collision ${seattle_collision.id}`);
+
+            log.info(
+              `About to check date_time. ${collision_type} last tweet date: ${
+                this.collision_types[collision_type].last_tweet_date
+              } now: ${now} difference is ${moment(date_now).diff(
+                moment(this.collision_types[collision_type].last_tweet_date),
+                'days'
+              )} days, tweet every ${
+                this.collision_types[collision_type].tweet_frequency_days
+              } days...`
+            );
+
+            if (
+              !latest_collisions[collision_type].latest_collision ||
+              latest_collisions[collision_type].latest_collision.date_time <
+                collision.date_time
+            ) {
+              log.debug(
+                `Most recent ${collision_type} found so far is collision ${seattle_collision.id} on ${seattle_collision.date_time_str}.`
+              );
+              latest_collisions[
+                collision_type
+              ].latest_collision = seattle_collision;
+            }
+          });
+
+          // Fatalities are serious injuries which are injuries.
+          if (!latest_collisions['serious injury'].latest_collision) {
+            latest_collisions['serious injury'].latest_collision =
+              latest_collisions['fatality'].latest_collision;
+          }
+          if (!latest_collisions['injury'].latest_collision) {
+            latest_collisions['injury'].latest_collision =
+              latest_collisions['serious injury'].latest_collision;
+          }
+
+          log.debug(`Checking to see if we will tweet anything...`);
+
+          // Tweet last fatal collision once per month and
+          // whenever there is a new one.
+          let store_updates: {
+            [key: string]: string;
+          } = {};
+
+          Object.keys(this.collision_types).forEach(collision_type => {
+            log.debug(`Checking for ${collision_type} collisions...`);
+
+            if (
+              latest_collisions[collision_type].latest_collision &&
+              this.shouldTweet(
+                latest_collisions[collision_type].latest_collision
+              )
+            ) {
+              let tweet: string = this.getTweetFromCollision(
+                latest_collisions[collision_type]
+                  .latest_collision as SeattleCollision,
+                collision_type,
+                this.collision_types[collision_type].last_tweet_date
+              );
+              if (tweet && tweet.length) {
+                let key: string = `last_${collision_type}_tweet_date`;
+
+                log.debug(`Returning tweet ${tweet}.`);
+                store_updates[key] = now.toString();
+
+                tweets.push(tweet);
+              }
+            } else {
+              log.trace(
+                `Not tweeting ${collision_type} last tweet date: ${
+                  this.collision_types[collision_type].last_tweet_date
+                } now: ${now} difference is ${moment(date_now).diff(
+                  moment(this.collision_types[collision_type].last_tweet_date),
+                  'days'
+                )} days, tweet every ${
+                  this.collision_types[collision_type].tweet_frequency_days
+                } days...`
+              );
+            }
+          });
+
+          if (Object.keys(store_updates).length > 0) {
+            log.trace(`Writing state values:\n${DumpObject(store_updates)}`);
+
+            this.state_store.PutStateValues(store_updates).then(() => {
+              log.trace(`Returning tweets: ${DumpObject(tweets)}`);
+              resolve(tweets);
+            });
+          } else {
+            log.trace(`No store updates to make.`);
+
+            resolve(tweets);
+          }
+        })
+        .catch(err => {
+          throw new Error(
+            `Initialization of collision info failed: ${DumpObject(err)}`
+          );
+        });
+    });
+  }
+
+  static getCollisionType(collision: ICollision): string {
+    var type: string;
+
+    if (collision.fatality_count > 0) {
+      type = 'fatality';
+    } else if (collision.serious_injury_count > 0) {
+      type = 'serious injury';
+    } else if (collision.injury_count > 0) {
+      type = 'injury';
+    } else {
+      throw new Error(
+        `Invalid collision record found: ${DumpObject(collision)}`
+      );
+    }
+
+    return type;
+  }
+
+  getTweetFromCollision(
+    collision: SeattleCollision,
+    collision_type: string,
+    last_tweeted: number
+  ) {
+    let tweet: string = undefined;
+    let nowDate = new Date();
+    let last_tweeted_date: Date = new Date(last_tweeted);
+
+    if (
+      collision.date_time > last_tweeted ||
+      last_tweeted_date.getFullYear() != nowDate.getFullYear() ||
+      last_tweeted_date.getMonth() != nowDate.getMonth()
+    ) {
+      log.debug(
+        `Tweeting last ${collision_type} collision from ${collision.date_time_str}.`
+      );
+
+      let media_item: MediaItem = new MediaItem({
+        url: `https://maps.googleapis.com/maps/api/staticmap?markers=${collision.y},${collision.x}&zoom=14&size=400x400&key=AIzaSyCK7loPQ04_Ec3uPZIHTPLuTdz1kYU1_xk`,
+        alt_text: `Map with pin on ${collision.location}`
+      } as IMediaItem);
+
+      tweet = `${collision.toString()}||${JSON.stringify([media_item])}`;
+    } else {
+      log.debug(
+        `Not tweeting last ${collision_type} collision: ${
+          collision.date_time
+        } <= ${last_tweeted} or ${new Date(
+          last_tweeted
+        ).getMonth()} >= ${new Date().getMonth()}.`
+      );
+    }
+
+    return tweet;
+  }
+
+  shouldTweet(collision: ICollision): boolean {
+    let collision_type: string = SeattleRegion.getCollisionType(collision);
+
+    if (collision && this.collision_types[collision_type]) {
+      let days_diff: number = moment(Date.now()).diff(
+        moment(this.collision_types[collision_type].last_tweet_date),
+        'days'
+      );
+
+      if (
+        days_diff >= this.collision_types[collision_type].tweet_frequency_days
+      ) {
+        return true;
+      }
+    } else {
+      log.error(
+        `shouldTweet called with collision ${collision} and last tweet date ${this.collision_types[collision_type].last_tweet_date}`
+      );
+    }
+
+    return false;
+  }
 }
 
 class Vehicle implements ISeattleVehicle {
@@ -421,3 +761,8 @@ class Vehicle implements ISeattleVehicle {
 function printCitation(citation: ISeattleCitation) {
   return `Citation: ${citation.id}, ${citation.Citation}, Type: ${citation.Type}, Status: ${citation.Status}, Date: ${citation.ViolationDate}, Location: ${citation.ViolationLocation}.`;
 }
+
+let Factory: RegionFactory = new SeattleRegionFactory();
+
+export { Factory as default };
+export { Factory };
