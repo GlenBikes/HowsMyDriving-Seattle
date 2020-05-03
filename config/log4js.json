@@ -41,7 +41,7 @@
     "result-filter": {
       "type": "logLevelFilter",
       "appender": "result",
-      "level": "debug",
+      "level": "info",
       "maxLevel": "fatal"
     },
     "error": {
