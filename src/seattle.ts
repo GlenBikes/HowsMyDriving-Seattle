@@ -107,6 +107,9 @@ export class SeattleRegion extends Region implements ISeattleRegion {
 
         this.collision_types[collision_type].last_tweet_date = parseInt(value);
       });
+
+      log.info(`Initialization completed.`);
+
       resolve(this);
     });
   }
@@ -425,8 +428,6 @@ export class SeattleRegion extends Region implements ISeattleRegion {
 
       this.initialize_promise
         .then(() => {
-          log.info(`Initialization completed.`);
-
           Promise.all([
             this.getLastCollisionsWithCondition('FATALITIES>0', 1),
             this.getLastCollisionsWithCondition('SERIOUSINJURIES>0', 1),
