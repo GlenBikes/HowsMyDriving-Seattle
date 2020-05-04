@@ -99,41 +99,15 @@ export class SeattleRegion extends Region implements ISeattleRegion {
       Object.keys(this.collision_types).forEach(async collision_type => {
         let key: string = `last_${collision_type}_tweet_date`;
 
-        log.info(`Getting key ${key}...`);
+        log.trace(`Getting key ${key}...`);
 
         let value: string = await this.state_store.GetStateValueAsync(key);
 
-        log.info(`Key ${key} has value ${value}.`);
+        log.trace(`Key ${key} has value ${value}.`);
 
         this.collision_types[collision_type].last_tweet_date = parseInt(value);
-        /*
-        let get_value_promise: Promise<string> = this.state_store
-          .GetStateValueAsync(key)
-          .then(value => {
-            log.info(`Retrieved StateStore value for ${key}: ${value}.`);
-            this.collision_types[collision_type].last_tweet_date = parseInt(
-              value
-            );
-
-            return this.collision_types[collision_type].last_tweet_date;
-          })
-          .catch(err => {
-            throw err;
-          });
-
-        state_store_promises.push(get_value_promise);
-        */
       });
       resolve(this);
-      /*
-      Promise.all(state_store_promises)
-        .then(values => {
-          resolve(this);
-        })
-        .catch(err => {
-          throw err;
-        });
-      */
     });
   }
 
@@ -488,13 +462,13 @@ export class SeattleRegion extends Region implements ISeattleRegion {
     return new Promise<ICollision>((resolve, reject) => {
       const restc = new RestClient.RestClient('SDOT-Crashes');
       const url = `https://gisdata.seattle.gov/server/rest/services/SDOT/SDOT_Collisions/MapServer/0/query?where=${condition}&outFields=*&outSR=4326&f=json&orderByFields=INCDATE DESC&resultRecordCount=${count}`;
-      log.info(`Making REST call: ${url}`);
+      log.trace(`Making REST call: ${url}`);
       const resp = restc.get(url);
       resp
         .then(response => {
           try {
             let id: string = `${response['result']['features'][0]['attributes']['INCKEY']}-${response['result']['features'][0]['attributes']['COLDETKEY']}`;
-            log.info(
+            log.debug(
               `getLastCollisionsWithCondition: Creating collision record with id ${id}...`
             );
 
