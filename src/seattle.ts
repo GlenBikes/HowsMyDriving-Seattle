@@ -98,7 +98,12 @@ export class SeattleRegion extends Region implements ISeattleRegion {
 
       Object.keys(this.collision_types).forEach(async collision_type => {
         let key: string = `last_${collision_type}_tweet_date`;
+
+        log.info(`Getting key ${key}...`);
+
         let value: string = await this.state_store.GetStateValueAsync(key);
+
+        log.info(`Key ${key} has value ${value}.`);
 
         this.collision_types[collision_type].last_tweet_date = parseInt(value);
         /*
@@ -440,11 +445,36 @@ export class SeattleRegion extends Region implements ISeattleRegion {
   }
 
   GetRecentCollisions(): Promise<Array<ICollision>> {
-    return Promise.all([
-      this.getLastCollisionsWithCondition('FATALITIES>0', 1),
-      this.getLastCollisionsWithCondition('SERIOUSINJURIES>0', 1),
-      this.getLastCollisionsWithCondition('INJURIES>0', 1)
-    ]);
+    return new Promise<Array<ICollision>>((resolve, reject) => {
+      log.info(`Getting recent ${this.name} collisions...`);
+      let collision_promises: Array<Promise<ICollision>> = [];
+
+      this.initialize_promise
+        .then(() => {
+          log.info(`Initialization completed.`);
+
+          Promise.all([
+            this.getLastCollisionsWithCondition('FATALITIES>0', 1),
+            this.getLastCollisionsWithCondition('SERIOUSINJURIES>0', 1),
+            this.getLastCollisionsWithCondition('INJURIES>0', 1)
+          ])
+            .then(collisions => {
+              resolve(collisions);
+            })
+            .catch(err => {
+              reject(
+                new Error(`Failed to get recent collisions: ${DumpObject(err)}`)
+              );
+            });
+        })
+        .catch(err => {
+          reject(
+            new Error(
+              `Initialization of collision info failed: ${DumpObject(err)}`
+            )
+          );
+        });
+    });
   }
 
   ProcessCollisions(collisions: Array<ICollision>): Promise<Array<string>> {
@@ -458,58 +488,63 @@ export class SeattleRegion extends Region implements ISeattleRegion {
     return new Promise<ICollision>((resolve, reject) => {
       const restc = new RestClient.RestClient('SDOT-Crashes');
       const url = `https://gisdata.seattle.gov/server/rest/services/SDOT/SDOT_Collisions/MapServer/0/query?where=${condition}&outFields=*&outSR=4326&f=json&orderByFields=INCDATE DESC&resultRecordCount=${count}`;
-      log.trace(`Making REST call: ${url}`);
+      log.info(`Making REST call: ${url}`);
       const resp = restc.get(url);
-      resp.then(response => {
-        try {
-          let id: string = `${response['result']['features'][0]['attributes']['INCKEY']}-${response['result']['features'][0]['attributes']['COLDETKEY']}`;
-          log.trace(
-            `getLastCollisionsWithCondition: Creating collision record with id ${id}...`
-          );
+      resp
+        .then(response => {
+          try {
+            let id: string = `${response['result']['features'][0]['attributes']['INCKEY']}-${response['result']['features'][0]['attributes']['COLDETKEY']}`;
+            log.info(
+              `getLastCollisionsWithCondition: Creating collision record with id ${id}...`
+            );
 
-          let collision = new SeattleCollision({
-            id: id,
-            x: response['result']['features'][0]['geometry']['x'],
-            y: response['result']['features'][0]['geometry']['y'],
-            date_time:
-              response['result']['features'][0]['attributes']['INCDATE'],
-            date_time_str:
-              response['result']['features'][0]['attributes']['INCDTTM'],
-            location:
-              response['result']['features'][0]['attributes']['LOCATION'],
-            ped_count:
-              response['result']['features'][0]['attributes']['PEDCOUNT'],
-            cycler_count:
-              response['result']['features'][0]['attributes']['PEDCYLCOUNT'],
-            person_count:
-              response['result']['features'][0]['attributes']['PERSONCOUNT'],
-            vehicle_count:
-              response['result']['features'][0]['attributes']['VEHCOUNT'],
-            injury_count:
-              response['result']['features'][0]['attributes']['INJURIES'],
-            serious_injury_count:
-              response['result']['features'][0]['attributes'][
-                'SERIOUSINJURIES'
-              ],
-            fatality_count:
-              response['result']['features'][0]['attributes']['FATALITIES'],
-            // TODO: What does a DUI crash look like?
-            dui:
-              response['result']['features'][0]['attributes']['UNDERINFL'] ===
-              'Y'
-          } as any);
+            let collision = new SeattleCollision({
+              id: id,
+              x: response['result']['features'][0]['geometry']['x'],
+              y: response['result']['features'][0]['geometry']['y'],
+              date_time:
+                response['result']['features'][0]['attributes']['INCDATE'],
+              date_time_str:
+                response['result']['features'][0]['attributes']['INCDTTM'],
+              location:
+                response['result']['features'][0]['attributes']['LOCATION'],
+              ped_count:
+                response['result']['features'][0]['attributes']['PEDCOUNT'],
+              cycler_count:
+                response['result']['features'][0]['attributes']['PEDCYLCOUNT'],
+              person_count:
+                response['result']['features'][0]['attributes']['PERSONCOUNT'],
+              vehicle_count:
+                response['result']['features'][0]['attributes']['VEHCOUNT'],
+              injury_count:
+                response['result']['features'][0]['attributes']['INJURIES'],
+              serious_injury_count:
+                response['result']['features'][0]['attributes'][
+                  'SERIOUSINJURIES'
+                ],
+              fatality_count:
+                response['result']['features'][0]['attributes']['FATALITIES'],
+              // TODO: What does a DUI crash look like?
+              dui:
+                response['result']['features'][0]['attributes']['UNDERINFL'] ===
+                'Y'
+            } as any);
 
-          Object.assign(
-            collision,
-            response['result']['features'][0]['attributes']
-          );
+            Object.assign(
+              collision,
+              response['result']['features'][0]['attributes']
+            );
 
-          resolve(collision);
-        } catch (err) {
+            resolve(collision);
+          } catch (err) {
+            log.error(`Error: ${DumpObject(err)}.`);
+            reject(err);
+          }
+        })
+        .catch(err => {
           log.error(`Error: ${DumpObject(err)}.`);
           reject(err);
-        }
-      });
+        });
     });
   }
 
