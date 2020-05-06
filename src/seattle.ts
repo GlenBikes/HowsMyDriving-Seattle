@@ -424,7 +424,6 @@ export class SeattleRegion extends Region implements ISeattleRegion {
   GetRecentCollisions(): Promise<Array<ICollision>> {
     return new Promise<Array<ICollision>>((resolve, reject) => {
       log.info(`Getting recent ${this.name} collisions...`);
-      let collision_promises: Array<Promise<ICollision>> = [];
 
       this.initialize_promise
         .then(() => {
@@ -434,6 +433,7 @@ export class SeattleRegion extends Region implements ISeattleRegion {
             this.getLastCollisionsWithCondition('INJURIES>0', 1)
           ])
             .then(collisions => {
+              log.info(`Returning ${collisions.length} collisions.`);
               resolve(collisions);
             })
             .catch(err => {
