@@ -1,6 +1,6 @@
- {
+{
   "name": "howsmydriving-seattle",
-  "version": "0.1.145",
+  "version": "0.1.146",
   "description": "Seattle region plug-in for @HowsMyDrivingWA.",
   "declaration": true,
   "main": "./dist/index.js",
