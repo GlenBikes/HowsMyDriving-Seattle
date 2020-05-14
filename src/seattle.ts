@@ -424,7 +424,6 @@ export class SeattleRegion extends Region implements ISeattleRegion {
   GetRecentCollisions(): Promise<Array<ICollision>> {
     return new Promise<Array<ICollision>>((resolve, reject) => {
       log.info(`Getting recent ${this.name} collisions...`);
-      let collision_promises: Array<Promise<ICollision>> = [];
 
       this.initialize_promise
         .then(() => {
@@ -434,6 +433,7 @@ export class SeattleRegion extends Region implements ISeattleRegion {
             this.getLastCollisionsWithCondition('INJURIES>0', 1)
           ])
             .then(collisions => {
+              log.info(`Returning ${collisions.length} collisions.`);
               resolve(collisions);
             })
             .catch(err => {
@@ -682,11 +682,7 @@ export class SeattleRegion extends Region implements ISeattleRegion {
     let nowDate = new Date();
     let last_tweeted_date: Date = new Date(last_tweeted);
 
-    if (
-      collision.date_time > last_tweeted ||
-      last_tweeted_date.getFullYear() != nowDate.getFullYear() ||
-      last_tweeted_date.getMonth() != nowDate.getMonth()
-    ) {
+    if (this.shouldTweet(collision)) {
       log.debug(
         `Tweeting last ${collision_type} collision from ${collision.date_time_str}.`
       );
@@ -698,13 +694,7 @@ export class SeattleRegion extends Region implements ISeattleRegion {
 
       tweet = `${collision.toString()}||${JSON.stringify([media_item])}`;
     } else {
-      log.debug(
-        `Not tweeting last ${collision_type} collision: ${
-          collision.date_time
-        } <= ${last_tweeted} or ${new Date(
-          last_tweeted
-        ).getMonth()} >= ${new Date().getMonth()}.`
-      );
+      log.debug(`Not tweeting last ${collision_type} collision.`);
     }
 
     return tweet;
@@ -719,10 +709,22 @@ export class SeattleRegion extends Region implements ISeattleRegion {
         'days'
       );
 
+      log.debug(
+        `Checking date diff... difference is ${days_diff} days and tweet frequency is ${this.collision_types[collision_type].tweet_frequency_days} days.`
+      );
+
       if (
         days_diff >= this.collision_types[collision_type].tweet_frequency_days
       ) {
+        log.trace(
+          `Will tweet last ${collision_type} collision from ${collision.date_time_str}.`
+        );
+
         return true;
+      } else {
+        log.trace(
+          `Will not tweet last ${collision_type} collision from ${collision.date_time_str}.`
+        );
       }
     } else {
       log.error(

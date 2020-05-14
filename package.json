@@ -1,6 +1,6 @@
- {
+{
   "name": "howsmydriving-seattle",
-  "version": "0.1.143",
+  "version": "0.1.146",
   "description": "Seattle region plug-in for @HowsMyDrivingWA.",
   "declaration": true,
   "main": "./dist/index.js",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@types/node": "^12.12.14",
     "chokidar": "^3.3.0",
-    "howsmydriving-utils": "^0.1.194", 
+    "howsmydriving-utils": "^0.1.195", 
     "log4js": "^4.0.2",
     "moment": "^2.24.0",
     "packpath": "^0.1.0",
